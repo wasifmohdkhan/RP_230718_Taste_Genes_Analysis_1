@@ -1,0 +1,588 @@
+BamQC report
+-----------------------------------
+
+>>>>>>> Input
+
+     bam file = BS_290_aligned.bam
+     outfile = /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/MultiQC_Results/aligned_bam/BS_290_aligned/genome_results.txt
+
+
+>>>>>>> Reference
+
+     number of bases = 3,209,457,928 bp
+     number of contigs = 456
+
+
+>>>>>>> Globals
+
+     number of windows = 855
+
+     number of reads = 4,030,117
+     number of mapped reads = 4,008,062 (99.45%)
+     number of supplementary alignments = 111,571 (2.77%)
+     number of secondary alignments = 16,719
+
+     number of mapped paired reads (first in pair) = 2,004,861
+     number of mapped paired reads (second in pair) = 2,003,201
+     number of mapped paired reads (both in pair) = 3,998,009
+     number of mapped paired reads (singletons) = 10,053
+
+     number of mapped bases = 951,575,384 bp
+     number of sequenced bases = 951,365,740 bp
+     number of aligned bases = 0 bp
+     number of duplicated reads (estimated) = 3,972,972
+     duplication rate = 42.1%
+
+
+>>>>>>> Insert size
+
+     mean insert size = 28,425.2392
+     std insert size = 1,674,520.3567
+     median insert size = 270
+
+
+>>>>>>> Mapping quality
+
+     mean mapping quality = 18.3636
+
+
+>>>>>>> ACTG content
+
+     number of A's = 249,761,904 bp (26.25%)
+     number of C's = 226,820,360 bp (23.84%)
+     number of T's = 247,717,216 bp (26.04%)
+     number of G's = 227,066,260 bp (23.87%)
+     number of N's = 15,060 bp (0%)
+
+     GC percentage = 47.71%
+
+
+>>>>>>> Mismatches and indels
+
+    general error rate = 0.0087
+    number of mismatches = 8,179,271
+    number of insertions = 50,891
+    mapped reads with insertion percentage = 1.24%
+    number of deletions = 115,081
+    mapped reads with deletion percentage = 2.83%
+    homopolymer indels = 59.11%
+
+
+>>>>>>> Coverage
+
+     mean coverageData = 0.2965X
+     std coverageData = 57.2664X
+
+     There is a 0.02% of reference with a coverageData >= 1X
+     There is a 0.01% of reference with a coverageData >= 2X
+     There is a 0.01% of reference with a coverageData >= 3X
+     There is a 0.01% of reference with a coverageData >= 4X
+     There is a 0.01% of reference with a coverageData >= 5X
+     There is a 0.01% of reference with a coverageData >= 6X
+     There is a 0.01% of reference with a coverageData >= 7X
+     There is a 0.01% of reference with a coverageData >= 8X
+     There is a 0.01% of reference with a coverageData >= 9X
+     There is a 0.01% of reference with a coverageData >= 10X
+     There is a 0.01% of reference with a coverageData >= 11X
+     There is a 0.01% of reference with a coverageData >= 12X
+     There is a 0.01% of reference with a coverageData >= 13X
+     There is a 0.01% of reference with a coverageData >= 14X
+     There is a 0.01% of reference with a coverageData >= 15X
+     There is a 0.01% of reference with a coverageData >= 16X
+     There is a 0.01% of reference with a coverageData >= 17X
+     There is a 0.01% of reference with a coverageData >= 18X
+     There is a 0.01% of reference with a coverageData >= 19X
+     There is a 0.01% of reference with a coverageData >= 20X
+     There is a 0.01% of reference with a coverageData >= 21X
+     There is a 0.01% of reference with a coverageData >= 22X
+     There is a 0.01% of reference with a coverageData >= 23X
+     There is a 0.01% of reference with a coverageData >= 24X
+     There is a 0.01% of reference with a coverageData >= 25X
+     There is a 0.01% of reference with a coverageData >= 26X
+     There is a 0.01% of reference with a coverageData >= 27X
+     There is a 0.01% of reference with a coverageData >= 28X
+     There is a 0.01% of reference with a coverageData >= 29X
+     There is a 0.01% of reference with a coverageData >= 30X
+     There is a 0.01% of reference with a coverageData >= 31X
+     There is a 0.01% of reference with a coverageData >= 32X
+     There is a 0.01% of reference with a coverageData >= 33X
+     There is a 0.01% of reference with a coverageData >= 34X
+     There is a 0.01% of reference with a coverageData >= 35X
+     There is a 0.01% of reference with a coverageData >= 36X
+     There is a 0.01% of reference with a coverageData >= 37X
+     There is a 0.01% of reference with a coverageData >= 38X
+     There is a 0.01% of reference with a coverageData >= 39X
+     There is a 0.01% of reference with a coverageData >= 40X
+     There is a 0.01% of reference with a coverageData >= 41X
+     There is a 0.01% of reference with a coverageData >= 42X
+     There is a 0.01% of reference with a coverageData >= 43X
+     There is a 0.01% of reference with a coverageData >= 44X
+     There is a 0.01% of reference with a coverageData >= 45X
+     There is a 0.01% of reference with a coverageData >= 46X
+     There is a 0.01% of reference with a coverageData >= 47X
+     There is a 0.01% of reference with a coverageData >= 48X
+     There is a 0.01% of reference with a coverageData >= 49X
+     There is a 0.01% of reference with a coverageData >= 50X
+     There is a 0.01% of reference with a coverageData >= 51X
+
+
+>>>>>>> Coverage per contig
+
+	chr1	248956422	114913931	0.46158251342477924	63.24561163314205
+	chr2	242193529	28176892	0.11634039982959248	37.74901467630182
+	chr3	198295559	37386544	0.18853949220315117	41.315792250570894
+	chr4	190214555	27608452	0.1451437404461504	46.87493455936919
+	chr5	181538259	5151350	0.028376112167077683	12.959684927430796
+	chr6	170805979	110942715	0.6495247745396547	78.34523300443837
+	chr7	159345973	195575915	1.2273665365864	135.2399826973383
+	chr8	145138636	25954727	0.17882713876407105	44.092390052175894
+	chr9	138394717	44901652	0.3244462864864993	50.22454508162464
+	chr10	133797422	15293789	0.11430555814446111	41.034957882303004
+	chr11	135086622	143775	0.0010643170868540929	0.27918407208328666
+	chr12	133275309	132504828	0.9942188766562905	102.04648719100939
+	chr13	114364328	20341	1.778614044757033E-4	0.028195394356828617
+	chr14	107043718	209986	0.0019616844773646595	0.6903259583175493
+	chr15	101991189	22198697	0.21765308569939312	30.1942898242759
+	chr16	90338345	111249476	1.2314756928522435	120.41291765348187
+	chr17	83257441	245331	0.0029466555427760505	0.5346843297076392
+	chr18	80373285	29536	3.674852906659221E-4	0.13721887465569177
+	chr19	58617616	32343559	0.5517719963227437	92.90068261930718
+	chr20	64444167	11899432	0.18464715355852143	25.90082956582615
+	chr21	46709983	24862	5.322630924528489E-4	0.11764558687282133
+	chr22	50818468	114667	0.0022564041088369686	0.3470980256438398
+	chrX	156040895	51672	3.311439606905613E-4	0.12759064542417273
+	chrY	57227415	4559	7.966461528971734E-5	0.02871856061629964
+	chrM	16569	0	0.0	0.0
+	chr1_KI270706v1_random	175055	0	0.0	0.0
+	chr1_KI270707v1_random	32032	0	0.0	0.0
+	chr1_KI270708v1_random	127682	111	8.69347284660328E-4	0.03956828725852488
+	chr1_KI270709v1_random	66860	0	0.0	0.0
+	chr1_KI270710v1_random	40176	0	0.0	0.0
+	chr1_KI270711v1_random	42210	0	0.0	0.0
+	chr1_KI270712v1_random	176043	5498339	31.23293172690763	495.13038549681465
+	chr1_KI270713v1_random	40745	0	0.0	0.0
+	chr1_KI270714v1_random	41717	0	0.0	0.0
+	chr2_KI270715v1_random	161471	0	0.0	0.0
+	chr2_KI270716v1_random	153799	0	0.0	0.0
+	chr3_GL000221v1_random	155397	51	3.281916639317361E-4	0.01811308792457713
+	chr4_GL000008v2_random	209709	0	0.0	0.0
+	chr5_GL000208v1_random	92689	0	0.0	0.0
+	chr9_KI270717v1_random	40062	0	0.0	0.0
+	chr9_KI270718v1_random	38054	0	0.0	0.0
+	chr9_KI270719v1_random	176845	0	0.0	0.0
+	chr9_KI270720v1_random	39050	0	0.0	0.0
+	chr11_KI270721v1_random	100316	0	0.0	0.0
+	chr14_GL000009v2_random	201709	0	0.0	0.0
+	chr14_GL000225v1_random	211173	8336	0.039474743456786615	1.0795973163591899
+	chr14_KI270722v1_random	194050	0	0.0	0.0
+	chr14_GL000194v1_random	191469	0	0.0	0.0
+	chr14_KI270723v1_random	38115	0	0.0	0.0
+	chr14_KI270724v1_random	39555	0	0.0	0.0
+	chr14_KI270725v1_random	172810	0	0.0	0.0
+	chr14_KI270726v1_random	43739	0	0.0	0.0
+	chr15_KI270727v1_random	448248	216	4.818761042994057E-4	0.03104061861527435
+	chr16_KI270728v1_random	1872759	41	2.1892832980645133E-5	0.004678926552587593
+	chr17_GL000205v2_random	185591	250	0.00134704807884003	0.03667742548643952
+	chr17_KI270729v1_random	280839	0	0.0	0.0
+	chr17_KI270730v1_random	112551	0	0.0	0.0
+	chr22_KI270731v1_random	150754	0	0.0	0.0
+	chr22_KI270732v1_random	41543	0	0.0	0.0
+	chr22_KI270733v1_random	179772	0	0.0	0.0
+	chr22_KI270734v1_random	165050	0	0.0	0.0
+	chr22_KI270735v1_random	42811	0	0.0	0.0
+	chr22_KI270736v1_random	181920	0	0.0	0.0
+	chr22_KI270737v1_random	103838	0	0.0	0.0
+	chr22_KI270738v1_random	99375	0	0.0	0.0
+	chr22_KI270739v1_random	73985	0	0.0	0.0
+	chrY_KI270740v1_random	37240	0	0.0	0.0
+	chrUn_KI270302v1	2274	0	0.0	0.0
+	chrUn_KI270304v1	2165	0	0.0	0.0
+	chrUn_KI270303v1	1942	0	0.0	0.0
+	chrUn_KI270305v1	1472	0	0.0	0.0
+	chrUn_KI270322v1	21476	0	0.0	0.0
+	chrUn_KI270320v1	4416	0	0.0	0.0
+	chrUn_KI270310v1	1201	0	0.0	0.0
+	chrUn_KI270316v1	1444	0	0.0	0.0
+	chrUn_KI270315v1	2276	0	0.0	0.0
+	chrUn_KI270312v1	998	0	0.0	0.0
+	chrUn_KI270311v1	12399	0	0.0	0.0
+	chrUn_KI270317v1	37690	0	0.0	0.0
+	chrUn_KI270412v1	1179	0	0.0	0.0
+	chrUn_KI270411v1	2646	0	0.0	0.0
+	chrUn_KI270414v1	2489	0	0.0	0.0
+	chrUn_KI270419v1	1029	0	0.0	0.0
+	chrUn_KI270418v1	2145	0	0.0	0.0
+	chrUn_KI270420v1	2321	0	0.0	0.0
+	chrUn_KI270424v1	2140	0	0.0	0.0
+	chrUn_KI270417v1	2043	0	0.0	0.0
+	chrUn_KI270422v1	1445	0	0.0	0.0
+	chrUn_KI270423v1	981	0	0.0	0.0
+	chrUn_KI270425v1	1884	0	0.0	0.0
+	chrUn_KI270429v1	1361	0	0.0	0.0
+	chrUn_KI270442v1	392061	0	0.0	0.0
+	chrUn_KI270466v1	1233	0	0.0	0.0
+	chrUn_KI270465v1	1774	0	0.0	0.0
+	chrUn_KI270467v1	3920	0	0.0	0.0
+	chrUn_KI270435v1	92983	0	0.0	0.0
+	chrUn_KI270438v1	112505	0	0.0	0.0
+	chrUn_KI270468v1	4055	0	0.0	0.0
+	chrUn_KI270510v1	2415	0	0.0	0.0
+	chrUn_KI270509v1	2318	0	0.0	0.0
+	chrUn_KI270518v1	2186	0	0.0	0.0
+	chrUn_KI270508v1	1951	0	0.0	0.0
+	chrUn_KI270516v1	1300	0	0.0	0.0
+	chrUn_KI270512v1	22689	0	0.0	0.0
+	chrUn_KI270519v1	138126	0	0.0	0.0
+	chrUn_KI270522v1	5674	0	0.0	0.0
+	chrUn_KI270511v1	8127	0	0.0	0.0
+	chrUn_KI270515v1	6361	0	0.0	0.0
+	chrUn_KI270507v1	5353	0	0.0	0.0
+	chrUn_KI270517v1	3253	0	0.0	0.0
+	chrUn_KI270529v1	1899	0	0.0	0.0
+	chrUn_KI270528v1	2983	0	0.0	0.0
+	chrUn_KI270530v1	2168	0	0.0	0.0
+	chrUn_KI270539v1	993	0	0.0	0.0
+	chrUn_KI270538v1	91309	0	0.0	0.0
+	chrUn_KI270544v1	1202	0	0.0	0.0
+	chrUn_KI270548v1	1599	0	0.0	0.0
+	chrUn_KI270583v1	1400	0	0.0	0.0
+	chrUn_KI270587v1	2969	0	0.0	0.0
+	chrUn_KI270580v1	1553	0	0.0	0.0
+	chrUn_KI270581v1	7046	0	0.0	0.0
+	chrUn_KI270579v1	31033	0	0.0	0.0
+	chrUn_KI270589v1	44474	0	0.0	0.0
+	chrUn_KI270590v1	4685	0	0.0	0.0
+	chrUn_KI270584v1	4513	0	0.0	0.0
+	chrUn_KI270582v1	6504	0	0.0	0.0
+	chrUn_KI270588v1	6158	0	0.0	0.0
+	chrUn_KI270593v1	3041	0	0.0	0.0
+	chrUn_KI270591v1	5796	0	0.0	0.0
+	chrUn_KI270330v1	1652	0	0.0	0.0
+	chrUn_KI270329v1	1040	0	0.0	0.0
+	chrUn_KI270334v1	1368	0	0.0	0.0
+	chrUn_KI270333v1	2699	0	0.0	0.0
+	chrUn_KI270335v1	1048	0	0.0	0.0
+	chrUn_KI270338v1	1428	0	0.0	0.0
+	chrUn_KI270340v1	1428	0	0.0	0.0
+	chrUn_KI270336v1	1026	0	0.0	0.0
+	chrUn_KI270337v1	1121	0	0.0	0.0
+	chrUn_KI270363v1	1803	0	0.0	0.0
+	chrUn_KI270364v1	2855	0	0.0	0.0
+	chrUn_KI270362v1	3530	0	0.0	0.0
+	chrUn_KI270366v1	8320	0	0.0	0.0
+	chrUn_KI270378v1	1048	0	0.0	0.0
+	chrUn_KI270379v1	1045	0	0.0	0.0
+	chrUn_KI270389v1	1298	0	0.0	0.0
+	chrUn_KI270390v1	2387	0	0.0	0.0
+	chrUn_KI270387v1	1537	0	0.0	0.0
+	chrUn_KI270395v1	1143	0	0.0	0.0
+	chrUn_KI270396v1	1880	0	0.0	0.0
+	chrUn_KI270388v1	1216	0	0.0	0.0
+	chrUn_KI270394v1	970	0	0.0	0.0
+	chrUn_KI270386v1	1788	0	0.0	0.0
+	chrUn_KI270391v1	1484	0	0.0	0.0
+	chrUn_KI270383v1	1750	0	0.0	0.0
+	chrUn_KI270393v1	1308	0	0.0	0.0
+	chrUn_KI270384v1	1658	0	0.0	0.0
+	chrUn_KI270392v1	971	0	0.0	0.0
+	chrUn_KI270381v1	1930	0	0.0	0.0
+	chrUn_KI270385v1	990	0	0.0	0.0
+	chrUn_KI270382v1	4215	0	0.0	0.0
+	chrUn_KI270376v1	1136	0	0.0	0.0
+	chrUn_KI270374v1	2656	30	0.011295180722891566	0.10567686414409157
+	chrUn_KI270372v1	1650	0	0.0	0.0
+	chrUn_KI270373v1	1451	0	0.0	0.0
+	chrUn_KI270375v1	2378	0	0.0	0.0
+	chrUn_KI270371v1	2805	0	0.0	0.0
+	chrUn_KI270448v1	7992	0	0.0	0.0
+	chrUn_KI270521v1	7642	0	0.0	0.0
+	chrUn_GL000195v1	182896	0	0.0	0.0
+	chrUn_GL000219v1	179198	0	0.0	0.0
+	chrUn_GL000220v1	161802	0	0.0	0.0
+	chrUn_GL000224v1	179693	208310	1.159254951500615	19.78970240355466
+	chrUn_KI270741v1	157432	0	0.0	0.0
+	chrUn_GL000226v1	15008	0	0.0	0.0
+	chrUn_GL000213v1	164239	0	0.0	0.0
+	chrUn_KI270743v1	210658	425	0.0020174880612177084	0.05879213506713928
+	chrUn_KI270744v1	168472	350	0.0020774965572914195	0.064241603579471
+	chrUn_KI270745v1	41891	0	0.0	0.0
+	chrUn_KI270746v1	66486	0	0.0	0.0
+	chrUn_KI270747v1	198735	0	0.0	0.0
+	chrUn_KI270748v1	93321	0	0.0	0.0
+	chrUn_KI270749v1	158759	1035281	6.521085418779408	170.42863062781495
+	chrUn_KI270750v1	148850	0	0.0	0.0
+	chrUn_KI270751v1	150742	0	0.0	0.0
+	chrUn_KI270752v1	27745	0	0.0	0.0
+	chrUn_KI270753v1	62944	0	0.0	0.0
+	chrUn_KI270754v1	40191	0	0.0	0.0
+	chrUn_KI270755v1	36723	0	0.0	0.0
+	chrUn_KI270756v1	79590	0	0.0	0.0
+	chrUn_KI270757v1	71251	0	0.0	0.0
+	chrUn_GL000214v1	137718	347	0.0025196415864302416	0.07078948321817981
+	chrUn_KI270742v1	186739	0	0.0	0.0
+	chrUn_GL000216v2	176608	0	0.0	0.0
+	chrUn_GL000218v1	161147	0	0.0	0.0
+	chr1_KI270762v1_alt	354444	0	0.0	0.0
+	chr1_KI270766v1_alt	256271	0	0.0	0.0
+	chr1_KI270760v1_alt	109528	0	0.0	0.0
+	chr1_KI270765v1_alt	185285	0	0.0	0.0
+	chr1_GL383518v1_alt	182439	0	0.0	0.0
+	chr1_GL383519v1_alt	110268	0	0.0	0.0
+	chr1_GL383520v2_alt	366580	0	0.0	0.0
+	chr1_KI270764v1_alt	50258	0	0.0	0.0
+	chr1_KI270763v1_alt	911658	0	0.0	0.0
+	chr1_KI270759v1_alt	425601	0	0.0	0.0
+	chr1_KI270761v1_alt	165834	0	0.0	0.0
+	chr2_KI270770v1_alt	136240	0	0.0	0.0
+	chr2_KI270773v1_alt	70887	0	0.0	0.0
+	chr2_KI270774v1_alt	223625	0	0.0	0.0
+	chr2_KI270769v1_alt	120616	0	0.0	0.0
+	chr2_GL383521v1_alt	143390	0	0.0	0.0
+	chr2_KI270772v1_alt	133041	0	0.0	0.0
+	chr2_KI270775v1_alt	138019	0	0.0	0.0
+	chr2_KI270771v1_alt	110395	0	0.0	0.0
+	chr2_KI270768v1_alt	110099	0	0.0	0.0
+	chr2_GL582966v2_alt	96131	680	0.007073680706535873	0.29265256586371946
+	chr2_GL383522v1_alt	123821	0	0.0	0.0
+	chr2_KI270776v1_alt	174166	0	0.0	0.0
+	chr2_KI270767v1_alt	161578	0	0.0	0.0
+	chr3_JH636055v2_alt	173151	0	0.0	0.0
+	chr3_KI270783v1_alt	109187	0	0.0	0.0
+	chr3_KI270780v1_alt	224108	0	0.0	0.0
+	chr3_GL383526v1_alt	180671	0	0.0	0.0
+	chr3_KI270777v1_alt	173649	0	0.0	0.0
+	chr3_KI270778v1_alt	248252	0	0.0	0.0
+	chr3_KI270781v1_alt	113034	0	0.0	0.0
+	chr3_KI270779v1_alt	205312	0	0.0	0.0
+	chr3_KI270782v1_alt	162429	0	0.0	0.0
+	chr3_KI270784v1_alt	184404	0	0.0	0.0
+	chr4_KI270790v1_alt	220246	0	0.0	0.0
+	chr4_GL383528v1_alt	376187	0	0.0	0.0
+	chr4_KI270787v1_alt	111943	0	0.0	0.0
+	chr4_GL000257v2_alt	586476	0	0.0	0.0
+	chr4_KI270788v1_alt	158965	0	0.0	0.0
+	chr4_GL383527v1_alt	164536	0	0.0	0.0
+	chr4_KI270785v1_alt	119912	0	0.0	0.0
+	chr4_KI270789v1_alt	205944	0	0.0	0.0
+	chr4_KI270786v1_alt	244096	0	0.0	0.0
+	chr5_KI270793v1_alt	126136	0	0.0	0.0
+	chr5_KI270792v1_alt	179043	0	0.0	0.0
+	chr5_KI270791v1_alt	195710	0	0.0	0.0
+	chr5_GL383532v1_alt	82728	0	0.0	0.0
+	chr5_GL949742v1_alt	226852	0	0.0	0.0
+	chr5_KI270794v1_alt	164558	0	0.0	0.0
+	chr5_GL339449v2_alt	1612928	0	0.0	0.0
+	chr5_GL383530v1_alt	101241	0	0.0	0.0
+	chr5_KI270796v1_alt	172708	0	0.0	0.0
+	chr5_GL383531v1_alt	173459	0	0.0	0.0
+	chr5_KI270795v1_alt	131892	0	0.0	0.0
+	chr6_GL000250v2_alt	4672374	40351	0.008636080930165265	0.7154146393108711
+	chr6_KI270800v1_alt	175808	0	0.0	0.0
+	chr6_KI270799v1_alt	152148	0	0.0	0.0
+	chr6_GL383533v1_alt	124736	0	0.0	0.0
+	chr6_KI270801v1_alt	870480	0	0.0	0.0
+	chr6_KI270802v1_alt	75005	0	0.0	0.0
+	chr6_KB021644v2_alt	185823	0	0.0	0.0
+	chr6_KI270797v1_alt	197536	0	0.0	0.0
+	chr6_KI270798v1_alt	271782	0	0.0	0.0
+	chr7_KI270804v1_alt	157952	0	0.0	0.0
+	chr7_KI270809v1_alt	209586	0	0.0	0.0
+	chr7_KI270806v1_alt	158166	0	0.0	0.0
+	chr7_GL383534v2_alt	119183	0	0.0	0.0
+	chr7_KI270803v1_alt	1111570	0	0.0	0.0
+	chr7_KI270808v1_alt	271455	0	0.0	0.0
+	chr7_KI270807v1_alt	126434	0	0.0	0.0
+	chr7_KI270805v1_alt	209988	0	0.0	0.0
+	chr8_KI270818v1_alt	145606	0	0.0	0.0
+	chr8_KI270812v1_alt	282736	0	0.0	0.0
+	chr8_KI270811v1_alt	292436	0	0.0	0.0
+	chr8_KI270821v1_alt	985506	0	0.0	0.0
+	chr8_KI270813v1_alt	300230	0	0.0	0.0
+	chr8_KI270822v1_alt	624492	251	4.0192668601038927E-4	0.020044079947691838
+	chr8_KI270814v1_alt	141812	0	0.0	0.0
+	chr8_KI270810v1_alt	374415	0	0.0	0.0
+	chr8_KI270819v1_alt	133535	0	0.0	0.0
+	chr8_KI270820v1_alt	36640	0	0.0	0.0
+	chr8_KI270817v1_alt	158983	0	0.0	0.0
+	chr8_KI270816v1_alt	305841	0	0.0	0.0
+	chr8_KI270815v1_alt	132244	0	0.0	0.0
+	chr9_GL383539v1_alt	162988	0	0.0	0.0
+	chr9_GL383540v1_alt	71551	0	0.0	0.0
+	chr9_GL383541v1_alt	171286	0	0.0	0.0
+	chr9_GL383542v1_alt	60032	0	0.0	0.0
+	chr9_KI270823v1_alt	439082	0	0.0	0.0
+	chr10_GL383545v1_alt	179254	0	0.0	0.0
+	chr10_KI270824v1_alt	181496	0	0.0	0.0
+	chr10_GL383546v1_alt	309802	0	0.0	0.0
+	chr10_KI270825v1_alt	188315	0	0.0	0.0
+	chr11_KI270832v1_alt	210133	0	0.0	0.0
+	chr11_KI270830v1_alt	177092	0	0.0	0.0
+	chr11_KI270831v1_alt	296895	0	0.0	0.0
+	chr11_KI270829v1_alt	204059	0	0.0	0.0
+	chr11_GL383547v1_alt	154407	0	0.0	0.0
+	chr11_JH159136v1_alt	200998	0	0.0	0.0
+	chr11_JH159137v1_alt	191409	3438	0.01796153785872138	0.5683177496917852
+	chr11_KI270827v1_alt	67707	0	0.0	0.0
+	chr11_KI270826v1_alt	186169	0	0.0	0.0
+	chr12_GL877875v1_alt	167313	0	0.0	0.0
+	chr12_GL877876v1_alt	408271	3514323	8.607819316091518	182.7642594385276
+	chr12_KI270837v1_alt	40090	0	0.0	0.0
+	chr12_GL383549v1_alt	120804	0	0.0	0.0
+	chr12_KI270835v1_alt	238139	0	0.0	0.0
+	chr12_GL383550v2_alt	169178	0	0.0	0.0
+	chr12_GL383552v1_alt	138655	0	0.0	0.0
+	chr12_GL383553v2_alt	152874	0	0.0	0.0
+	chr12_KI270834v1_alt	119498	0	0.0	0.0
+	chr12_GL383551v1_alt	184319	0	0.0	0.0
+	chr12_KI270833v1_alt	76061	0	0.0	0.0
+	chr12_KI270836v1_alt	56134	0	0.0	0.0
+	chr13_KI270840v1_alt	191684	0	0.0	0.0
+	chr13_KI270839v1_alt	180306	0	0.0	0.0
+	chr13_KI270843v1_alt	103832	0	0.0	0.0
+	chr13_KI270841v1_alt	169134	0	0.0	0.0
+	chr13_KI270838v1_alt	306913	0	0.0	0.0
+	chr13_KI270842v1_alt	37287	0	0.0	0.0
+	chr14_KI270844v1_alt	322166	0	0.0	0.0
+	chr14_KI270847v1_alt	1511111	0	0.0	0.0
+	chr14_KI270845v1_alt	180703	0	0.0	0.0
+	chr14_KI270846v1_alt	1351393	0	0.0	0.0
+	chr15_KI270852v1_alt	478999	0	0.0	0.0
+	chr15_KI270851v1_alt	263054	0	0.0	0.0
+	chr15_KI270848v1_alt	327382	0	0.0	0.0
+	chr15_GL383554v1_alt	296527	0	0.0	0.0
+	chr15_KI270849v1_alt	244917	0	0.0	0.0
+	chr15_GL383555v2_alt	388773	0	0.0	0.0
+	chr15_KI270850v1_alt	430880	0	0.0	0.0
+	chr16_KI270854v1_alt	134193	0	0.0	0.0
+	chr16_KI270856v1_alt	63982	0	0.0	0.0
+	chr16_KI270855v1_alt	232857	0	0.0	0.0
+	chr16_KI270853v1_alt	2659700	8352	0.0031402037823814715	0.39064702186789396
+	chr16_GL383556v1_alt	192462	0	0.0	0.0
+	chr16_GL383557v1_alt	89672	0	0.0	0.0
+	chr17_GL383563v3_alt	375691	984	0.002619173735862717	0.10232221104135815
+	chr17_KI270862v1_alt	391357	0	0.0	0.0
+	chr17_KI270861v1_alt	196688	0	0.0	0.0
+	chr17_KI270857v1_alt	2877074	0	0.0	0.0
+	chr17_JH159146v1_alt	278131	0	0.0	0.0
+	chr17_JH159147v1_alt	70345	0	0.0	0.0
+	chr17_GL383564v2_alt	133151	0	0.0	0.0
+	chr17_GL000258v2_alt	1821992	62	3.4028689478329214E-5	0.0058333122260531885
+	chr17_GL383565v1_alt	223995	0	0.0	0.0
+	chr17_KI270858v1_alt	235827	0	0.0	0.0
+	chr17_KI270859v1_alt	108763	0	0.0	0.0
+	chr17_GL383566v1_alt	90219	0	0.0	0.0
+	chr17_KI270860v1_alt	178921	0	0.0	0.0
+	chr18_KI270864v1_alt	111737	0	0.0	0.0
+	chr18_GL383567v1_alt	289831	0	0.0	0.0
+	chr18_GL383570v1_alt	164789	40	2.4273464855057073E-4	0.015578052780786299
+	chr18_GL383571v1_alt	198278	0	0.0	0.0
+	chr18_GL383568v1_alt	104552	0	0.0	0.0
+	chr18_GL383569v1_alt	167950	1205	0.007174754391187853	0.1892677861004492
+	chr18_GL383572v1_alt	159547	0	0.0	0.0
+	chr18_KI270863v1_alt	167999	0	0.0	0.0
+	chr19_KI270868v1_alt	61734	0	0.0	0.0
+	chr19_KI270865v1_alt	52969	0	0.0	0.0
+	chr19_GL383573v1_alt	385657	0	0.0	0.0
+	chr19_GL383575v2_alt	170222	0	0.0	0.0
+	chr19_GL383576v1_alt	188024	0	0.0	0.0
+	chr19_GL383574v1_alt	155864	0	0.0	0.0
+	chr19_KI270866v1_alt	43156	0	0.0	0.0
+	chr19_KI270867v1_alt	233762	0	0.0	0.0
+	chr19_GL949746v1_alt	987716	0	0.0	0.0
+	chr20_GL383577v2_alt	128386	0	0.0	0.0
+	chr20_KI270869v1_alt	118774	0	0.0	0.0
+	chr20_KI270871v1_alt	58661	0	0.0	0.0
+	chr20_KI270870v1_alt	183433	0	0.0	0.0
+	chr21_GL383578v2_alt	63917	0	0.0	0.0
+	chr21_KI270874v1_alt	166743	0	0.0	0.0
+	chr21_KI270873v1_alt	143900	0	0.0	0.0
+	chr21_GL383579v2_alt	201197	0	0.0	0.0
+	chr21_GL383580v2_alt	74653	113	0.0015136699127965387	0.05487853241501061
+	chr21_GL383581v2_alt	116689	0	0.0	0.0
+	chr21_KI270872v1_alt	82692	0	0.0	0.0
+	chr22_KI270875v1_alt	259914	53	2.039136021914941E-4	0.014278376008297842
+	chr22_KI270878v1_alt	186262	0	0.0	0.0
+	chr22_KI270879v1_alt	304135	0	0.0	0.0
+	chr22_KI270876v1_alt	263666	0	0.0	0.0
+	chr22_KI270877v1_alt	101331	0	0.0	0.0
+	chr22_GL383583v2_alt	96924	0	0.0	0.0
+	chr22_GL383582v2_alt	162811	0	0.0	0.0
+	chrX_KI270880v1_alt	284869	0	0.0	0.0
+	chrX_KI270881v1_alt	144206	0	0.0	0.0
+	chr19_KI270882v1_alt	248807	0	0.0	0.0
+	chr19_KI270883v1_alt	170399	0	0.0	0.0
+	chr19_KI270884v1_alt	157053	0	0.0	0.0
+	chr19_KI270885v1_alt	171027	0	0.0	0.0
+	chr19_KI270886v1_alt	204239	0	0.0	0.0
+	chr19_KI270887v1_alt	209512	0	0.0	0.0
+	chr19_KI270888v1_alt	155532	0	0.0	0.0
+	chr19_KI270889v1_alt	170698	0	0.0	0.0
+	chr19_KI270890v1_alt	184499	0	0.0	0.0
+	chr19_KI270891v1_alt	170680	0	0.0	0.0
+	chr1_KI270892v1_alt	162212	0	0.0	0.0
+	chr2_KI270894v1_alt	214158	0	0.0	0.0
+	chr2_KI270893v1_alt	161218	0	0.0	0.0
+	chr3_KI270895v1_alt	162896	35	2.148610156173264E-4	0.014656563388505994
+	chr4_KI270896v1_alt	378547	0	0.0	0.0
+	chr5_KI270897v1_alt	1144418	0	0.0	0.0
+	chr5_KI270898v1_alt	130957	0	0.0	0.0
+	chr6_GL000251v2_alt	4795265	457	9.530234512586895E-5	0.025066293510186525
+	chr7_KI270899v1_alt	190869	0	0.0	0.0
+	chr8_KI270901v1_alt	136959	0	0.0	0.0
+	chr8_KI270900v1_alt	318687	0	0.0	0.0
+	chr11_KI270902v1_alt	106711	0	0.0	0.0
+	chr11_KI270903v1_alt	214625	0	0.0	0.0
+	chr12_KI270904v1_alt	572349	24232640	42.338922580453534	552.8389502011995
+	chr15_KI270906v1_alt	196384	0	0.0	0.0
+	chr15_KI270905v1_alt	5161414	7940	0.0015383381375723784	0.23451625192863673
+	chr17_KI270907v1_alt	137721	0	0.0	0.0
+	chr17_KI270910v1_alt	157099	0	0.0	0.0
+	chr17_KI270909v1_alt	325800	0	0.0	0.0
+	chr17_JH159148v1_alt	88070	0	0.0	0.0
+	chr17_KI270908v1_alt	1423190	225	1.5809554592148624E-4	0.0253831082865606
+	chr18_KI270912v1_alt	174061	0	0.0	0.0
+	chr18_KI270911v1_alt	157710	0	0.0	0.0
+	chr19_GL949747v2_alt	729520	0	0.0	0.0
+	chr22_KB663609v1_alt	74013	0	0.0	0.0
+	chrX_KI270913v1_alt	274009	0	0.0	0.0
+	chr19_KI270914v1_alt	205194	0	0.0	0.0
+	chr19_KI270915v1_alt	170665	0	0.0	0.0
+	chr19_KI270916v1_alt	184516	0	0.0	0.0
+	chr19_KI270917v1_alt	190932	0	0.0	0.0
+	chr19_KI270918v1_alt	123111	0	0.0	0.0
+	chr19_KI270919v1_alt	170701	0	0.0	0.0
+	chr19_KI270920v1_alt	198005	0	0.0	0.0
+	chr19_KI270921v1_alt	282224	0	0.0	0.0
+	chr19_KI270922v1_alt	187935	0	0.0	0.0
+	chr19_KI270923v1_alt	189352	0	0.0	0.0
+	chr3_KI270924v1_alt	166540	962	0.0057763900564428965	0.13701432808443992
+	chr4_KI270925v1_alt	555799	0	0.0	0.0
+	chr6_GL000252v2_alt	4604811	0	0.0	0.0
+	chr8_KI270926v1_alt	229282	0	0.0	0.0
+	chr11_KI270927v1_alt	218612	0	0.0	0.0
+	chr19_GL949748v2_alt	1064304	0	0.0	0.0
+	chr22_KI270928v1_alt	176103	0	0.0	0.0
+	chr19_KI270929v1_alt	186203	0	0.0	0.0
+	chr19_KI270930v1_alt	200773	0	0.0	0.0
+	chr19_KI270931v1_alt	170148	0	0.0	0.0
+	chr19_KI270932v1_alt	215732	0	0.0	0.0
+	chr19_KI270933v1_alt	170537	0	0.0	0.0
+	chr19_GL000209v2_alt	177381	0	0.0	0.0
+	chr3_KI270934v1_alt	163458	36	2.2024006166721728E-4	0.014838852920035771
+	chr6_GL000253v2_alt	4677643	63890	0.013658588310394787	0.7780693721747011
+	chr19_GL949749v2_alt	1091841	0	0.0	0.0
+	chr3_KI270935v1_alt	197351	0	0.0	0.0
+	chr6_GL000254v2_alt	4827813	261	5.406174597069108E-5	0.007352470557459832
+	chr19_GL949750v2_alt	1066390	0	0.0	0.0
+	chr3_KI270936v1_alt	164170	0	0.0	0.0
+	chr6_GL000255v2_alt	4606388	221	4.797685301368448E-5	0.006926366380380075
+	chr19_GL949751v2_alt	1002683	0	0.0	0.0
+	chr3_KI270937v1_alt	165607	0	0.0	0.0
+	chr6_GL000256v2_alt	4929269	90	1.8258285356307394E-5	0.004272932481484261
+	chr19_GL949752v1_alt	987100	0	0.0	0.0
+	chr6_KI270758v1_alt	76752	0	0.0	0.0
+	chr19_GL949753v2_alt	796479	0	0.0	0.0
+	chr19_KI270938v1_alt	1066800	0	0.0	0.0
+	chrEBV	171823	0	0.0	0.0
+
+

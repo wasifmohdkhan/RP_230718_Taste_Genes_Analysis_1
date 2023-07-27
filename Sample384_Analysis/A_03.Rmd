@@ -1,0 +1,248 @@
+---
+title: "Vcf to plink"
+output: html_document
+date: "2023-07-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+library(tidyverse)
+library(here)
+```
+
+```{bash}
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+
+## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1
+vcftools \
+--vcf $root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped_filtered.g.vcf \
+--out $root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_VCF_depth \
+--depth
+
+vcftools \
+--vcf $root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped_filtered.g.vcf \
+--out $root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_VCF_site-mean-depth \
+--site-mean-depth
+
+vcftools \
+--vcf $root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped_filtered.g.vcf \
+--out $root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_VCF_site-quality \
+--site-quality
+
+```
+
+```{r}
+var_qual <- read_delim(here(".//Sample384_Analysis/VCFtoPLINK/Samples384_VCF_site-quality.lqual"),
+                                  delim = "\t",
+                                  col_names = c("CHROM", "POS", "qual"), skip = 1)
+a <- ggplot(var_qual, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + scale_x_continuous(limits = c(0, 100)) +
+  theme_light()
+```
+
+```{r}
+var_depth <- read_delim("./cichlid_subset.ldepth.mean", delim = "\t",
+           col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
+a <- ggplot(var_depth, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + scale_x_continuous(limits = c(0, 100)) +
+  theme_light()
+```
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
