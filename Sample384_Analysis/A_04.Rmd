@@ -1,0 +1,357 @@
+---
+title: "Vcf to plink"
+output: html_document
+date: "2023-07-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+library(tidyverse)
+library(here)
+```
+https://speciationgenomics.github.io/filtering_vcfs/
+
+```{bash}
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+
+## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1
+vcftools \
+--vcf $root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped.g.vcf \
+--out $root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_VCF_depth \
+--depth
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1
+vcftools \
+--vcf $root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped.g.vcf \
+--out $root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_VCF_site-mean-depth \
+--site-mean-depth
+```
+
+
+```{bash}
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+
+## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1
+SUBSET_VCF=$root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped.g.vcf
+OUT=$root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf
+# Calculate allele frequency
+vcftools --vcf $SUBSET_VCF --out $OUT --freq2  --max-alleles 2
+# Calculate mean depth per individual
+vcftools --vcf $SUBSET_VCF --out $OUT --depth
+# Calculate mean depth per site
+vcftools --vcf $SUBSET_VCF --out $OUT --site-mean-depth
+# Calculate site quality
+vcftools --vcf $SUBSET_VCF --out $OUT --site-quality 
+# Calculate proportion of missing data per individual
+vcftools --vcf $SUBSET_VCF --out $OUT --missing-indv
+# Calculate proportion of missing data per site
+vcftools --vcf $SUBSET_VCF --out $OUT --missing-site
+# Calculate heterozygosity and inbreeding coefficient per individual
+vcftools --vcf $SUBSET_VCF --out $OUT --het 
+
+```
+
+# Variant quality
+```{r}
+var_qual <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.lqual"),
+                       delim = "\t", col_names = c("chr", "pos", "qual"), skip = 1)
+a <- ggplot(var_qual, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 100)
+```
+
+# Variant mean depth
+```{r}
+var_depth <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.ldepth.mean"),
+                        delim = "\t", col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
+a <- ggplot(var_depth, aes(mean_depth)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+
+summary(var_depth$mean_depth)
+
+a + theme_light() + xlim(0, 50)
+```
+
+# Variant missingness
+```{r}
+var_miss <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.lmiss"),
+                       delim = "\t", col_names = c("chr", "pos", "nchr", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(var_miss, aes(fmiss)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.05)
+
+summary(var_miss$fmiss)
+```
+
+# Minor allele frequency
+```{r}
+var_freq <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.frq"),
+                       delim = "\t", col_names = c("chr", "pos", "nalleles", "nchr", "a1", "a2"), skip = 1)
+# find minor allele frequency
+var_freq$maf <- var_freq %>% select(a1, a2) %>% apply(1, function(z) min(z))
+a <- ggplot(var_freq, aes(maf)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.6) + ylim(0, 10)
+summary(var_freq$maf)
+```
+
+# Individual based statistics
+# Mean depth per individual
+```{r}
+ind_depth <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.idepth"),
+                        delim = "\t", col_names = c("ind", "nsites", "depth"), skip = 1)
+a <- ggplot(ind_depth, aes(depth)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Proportion of missing data per individual
+```{r}
+ind_miss  <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.imiss"),
+                        delim = "\t", col_names = c("ind", "ndata", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(ind_miss, aes(fmiss)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Heterozygosity and inbreeding coefficient per individual
+```{r}
+ind_het <- read_delim(here("./Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_gvcf.het"),
+                      delim = "\t", col_names = c("ind","ho", "he", "nsites", "f"), skip = 1)
+a <- ggplot(ind_het, aes(f)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Applying filters to the VCF
+```{bash}
+<!-- vcftools defults -->
+<!--          --maf 0 -->
+<!--         --maxDP 150 -->
+<!--         --max-meanDP 150 -->
+<!--         --minDP 5 -->
+<!--         --min-meanDP 5 -->
+<!--         --minQ 30 -->
+<!--         --max-missing 0.5 -->
+        
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/VCFtoPLINK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1
+VCF_IN=$root_dir/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples384_Combined_Genotyped.g.vcf
+VCF_OUT=$root_dir/Sample384_Analysis/VCFtoPLINK/Samples384_Combined_Genotyped_filtered.g.vcf
+
+# set filters
+MAF=0.01
+MAX_MISS=0.5 # default 0.5, somewhat counter-intuitive 0 is totally missing, 1 is none missing
+QUAL=30 # default 30
+MIN_DEPTH=5 # default 5
+MAX_DEPTH=150 # # default 150
+
+
+# perform the filtering with vcftools
+vcftools \
+--vcf $VCF_IN \
+--remove-indels \
+--maf $MAF \
+--max-missing $MAX_MISS \
+--minQ $QUAL \
+--min-meanDP $MIN_DEPTH \
+--max-meanDP $MAX_DEPTH \
+--minDP $MIN_DEPTH \
+--maxDP $MAX_DEPTH \
+--recode \
+--stdout > $VCF_OUT
+
+cat out.log
+echo "number of SNPs after the above filtering: "
+bcftools view -H $VCF_OUT | wc -l
+```
+
+
+```{bash}
+
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+

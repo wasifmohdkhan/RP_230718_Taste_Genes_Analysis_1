@@ -667,16 +667,18 @@ If you're using a small number of samples or limited annotations, there may not 
 
 ## Now we need to do the hard filtering
 ```{bash}
-conda activate GATK_env
-cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
-ref=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
+<!-- conda activate GATK_env -->
+<!-- cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
+<!-- ref=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna -->
 
-_JAVA_OPTIONS="-Xmx90g" gatk VariantFiltration \
-    -R ${ref} \
-    -V ./Samples384_Combined_Genotyped.g.vcf \
-    --filter-expression "QD < 2.0 || FS > 60.0 || MQ < 40.0" \
-    --filter-name "basic_filters" \
-    -O ./Samples384_Combined_Genotyped_filtered.g.vcf
+<!-- _JAVA_OPTIONS="-Xmx90g" gatk VariantFiltration \ -->
+<!--     -R ${ref} \ -->
+<!--     -V ./Samples384_Combined_Genotyped.g.vcf \ -->
+<!--     --filter-expression "QD < 2.0 || FS > 60.0 || MQ < 40.0" \ -->
+<!--     --filter-name "basic_filters" \ -->
+<!--     -O ./Samples384_Combined_Genotyped_filtered.g.vcf -->
+
+# we do not need to do this step becuase we will usse filtering using vcftools
 ```
 
 
