@@ -1,9 +1,0 @@
-*.lqual
-*.log
-*.lmiss
-*.ldepth.mean
-*.imiss
-*.idepth
-*.het
-*.frq
-*.g.vcf
