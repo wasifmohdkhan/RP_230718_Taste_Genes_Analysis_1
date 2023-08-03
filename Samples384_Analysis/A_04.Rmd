@@ -1,0 +1,381 @@
+---
+title: "Vcf to plink"
+output: html_document
+date: "2023-07-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+library(tidyverse)
+library(here)
+```
+https://speciationgenomics.github.io/filtering_vcfs/
+
+```{bash}
+
+```
+
+
+```{bash}
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+
+## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+VCF_file=Samples379_Combined_Genotyped_renamed.g.vcf
+
+# Calculate allele frequency
+vcftools --vcf $VCF_file --out $out_dir --freq2  --max-alleles 2
+# Calculate mean depth per individual
+vcftools --vcf $VCF_file --out $out_dir --depth
+# Calculate mean depth per site
+vcftools --vcf $VCF_file --out $out_dir --site-mean-depth
+# Calculate site quality
+vcftools --vcf $VCF_file --out $out_dir --site-quality 
+# Calculate proportion of missing data per individual
+vcftools --vcf $VCF_file --out $out_dir --missing-indv
+# Calculate proportion of missing data per site
+vcftools --vcf $VCF_file --out $out_dir --missing-site
+# Calculate heterozygosity and inbreeding coefficient per individual
+vcftools --vcf $VCF_file --out $out_dir --het 
+
+```
+
+# Variant quality
+```{r}
+var_qual <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.lqual"),
+                       delim = "\t", col_names = c("chr", "pos", "qual"), skip = 1)
+a <- ggplot(var_qual, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 100)
+```
+
+# Variant mean depth
+```{r}
+var_depth <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.ldepth.mean"),
+                        delim = "\t", col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
+a <- ggplot(var_depth, aes(mean_depth)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+
+summary(var_depth$mean_depth)
+
+a + theme_light() + xlim(0, 50)
+```
+
+# Variant missingness
+```{r}
+var_miss <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.lmiss"),
+                       delim = "\t", col_names = c("chr", "pos", "nchr", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(var_miss, aes(fmiss)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.05)
+
+summary(var_miss$fmiss)
+```
+
+# Minor allele frequency
+```{r}
+var_freq <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.frq"),
+                       delim = "\t", col_names = c("chr", "pos", "nalleles", "nchr", "a1", "a2"), skip = 1)
+# find minor allele frequency
+var_freq$maf <- var_freq %>% select(a1, a2) %>% apply(1, function(z) min(z))
+a <- ggplot(var_freq, aes(maf)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.6) + ylim(0, 10)
+summary(var_freq$maf)
+```
+
+# Individual based statistics
+# Mean depth per individual
+```{r}
+ind_depth <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.idepth"),
+                        delim = "\t", col_names = c("ind", "nsites", "depth"), skip = 1)
+a <- ggplot(ind_depth, aes(depth)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Proportion of missing data per individual
+```{r}
+ind_miss  <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.imiss"),
+                        delim = "\t", col_names = c("ind", "ndata", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(ind_miss, aes(fmiss)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Heterozygosity and inbreeding coefficient per individual
+```{r}
+ind_het <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.het"),
+                      delim = "\t", col_names = c("ind","ho", "he", "nsites", "f"), skip = 1)
+a <- ggplot(ind_het, aes(f)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Applying filters to the VCF
+```{bash}
+<!-- vcftools defults -->
+<!--          --maf 0 -->
+<!--         --maxDP 150 -->
+<!--         --max-meanDP 150 -->
+<!--         --minDP 5 -->
+<!--         --min-meanDP 5 -->
+<!--         --minQ 30 -->
+<!--         --max-missing 0.5 -->
+        
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+VCF_IN=$root_dir/Samples379_Combined_Genotyped_renamed.g.vcf
+VCF_OUT=$root_dir/Samples379_Combined_Genotyped_renamed_filtered.g.vcf
+
+# set filters
+MAF=0.01
+MAX_MISS=0.5 # default 0.5, somewhat counter-intuitive 0 is totally missing, 1 is none missing
+QUAL=30 # default 30
+MIN_DEPTH=5 # default 5
+MAX_DEPTH=150 # # default 150
+
+
+# perform the filtering with vcftools
+vcftools \
+--vcf $VCF_IN \
+--remove-indels \
+--maf $MAF \
+--max-missing $MAX_MISS \
+--minQ $QUAL \
+--min-meanDP $MIN_DEPTH \
+--max-meanDP $MAX_DEPTH \
+--minDP $MIN_DEPTH \
+--maxDP $MAX_DEPTH \
+--recode \
+--stdout > $VCF_OUT
+
+cat out.log
+echo "number of SNPs after the above filtering: "
+bcftools view -H $VCF_OUT | wc -l
+```
+
+First we need to remove the sample 103 as we do not have meta data for it 
+as it is a duplicated sample of either 102 or 103
+
+```{bash}
+```
+
+
+```{bash}
+conda activate Plink_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+plink \
+--vcf ./Samples379_Combined_Genotyped_renamed_filtered.g.vcf \
+--double-id \
+--make-bed \
+--keep-allele-order \
+--make-pheno ./Samples379_Combined_Phenotype.txt 1 \
+--update-sex ./Samples379_Combined_Phenotype_with_sex_info.txt \
+--recode \
+--out ./Samples379_Combined_Plink
+```
+
+
+```{bash}
+conda activate Plink_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+plink \
+--bfile ./Samples379_Combined_Plink \
+--freq \
+--out ./Samples379_Combined_Plink_genes_freq_stat
+```
+
+
+```{bash}
+plink \
+--bfile ./Samples379_Combined_Plink \
+--freq \
+--within ./Samples379_Combined_Phenotype.txt \
+--out ./Samples379_Combined_Plink_genes_freq_stat_by_caries
+```
+
+
+```{bash}
+plink \
+--bfile ./Samples379_Combined_Plink \
+--test-missing \
+--out ./Samples379_Combined_Plink_test_missing
+```
+
+# filter
+```{bash}
+plink \
+--file ./Samples379_Combined_Plink \
+--exclude /media/prashen/Second_stor/Vivianne/T2R_sequences/December_2021/All_VCFs/PLINK/Dividing_39_7_genes/Feb26_filtering_depth/All_Variants_39_genes.fail-diffmiss-qc.txt \
+--geno 0.05 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.05 \
+--recode \
+--out /media/prashen/Second_stor/Vivianne/T2R_sequences/December_2021/All_VCFs/PLINK/Dividing_39_7_genes/Feb26_filtering_depth/All_Variants_39_genes_FILT
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+

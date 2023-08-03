@@ -1,0 +1,137 @@
+---
+title: "metadata files for plink"
+output: html_document
+date: "2023-07-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+libraries
+```{r}
+library(here)
+library(tidyverse)
+
+library(vcfR)
+```
+
+
+```{r}
+# from another R project
+metadata_raw = read_csv(here("../RP_230728_Metadata_ECC_study/Data/TheRoleOfTasteAndOra_DATA_2023-02-14_1205.csv"))
+metadata_raw
+```
+
+```{r}
+metadata_raw_2 = metadata_raw %>% 
+  dplyr::select(Participant_id, child_sex, cariesfree_eccsecc)
+metadata_raw_2
+
+```
+```{r}
+metadata_raw_2 %>% group_by(child_sex) %>% summarise(n = n())
+metadata_raw_2 %>% group_by(cariesfree_eccsecc) %>% summarise(n = n())
+```
+
+
+```{r}
+metadata_raw_3 = metadata_raw_2 %>% 
+  mutate(sampleid = str_pad(Participant_id, width = 3, pad = "0"),
+         sampleid = paste0("BS", sampleid),
+         Family_id = sampleid) %>%
+  mutate(child_sex = case_when( # AS Original in data 1, Female | 2, Male 
+    child_sex == 1 ~ "Female",
+    child_sex == 2 ~ "Male")) %>% 
+  mutate(child_sex = case_when( # AS 	required by plink Sex code ('1' = male, '2' = female, '0' = unknown)
+    child_sex == "Female" ~ 2,
+    child_sex == "Male" ~ 1,
+    TRUE ~ 0 )) %>% 
+  mutate(cariesfree_eccsecc = case_when( # AS Original in data 1, CF | 2, ECC/S-ECC 
+    cariesfree_eccsecc == 1 ~ "CF",
+    cariesfree_eccsecc == 2 ~ "ECC")) %>% 
+  mutate(cariesfree_eccsecc = case_when( # AS 	required by plink Binary ('0' = control, '1' = case)
+    cariesfree_eccsecc == "CF" ~ 0,
+    cariesfree_eccsecc == "ECC" ~ 1,
+    is.na(cariesfree_eccsecc) ~ 9 )) %>% 
+  relocate(Participant_id, sampleid, Family_id, child_sex, cariesfree_eccsecc)
+  
+  
+metadata_raw_3
+```
+
+```{r}
+metadata_raw_3 %>% group_by(child_sex) %>% summarise(n = n())
+metadata_raw_3 %>% group_by(cariesfree_eccsecc) %>% summarise(n = n())
+```
+# get the sample names from the VCF file
+```{r}
+# Load the VCF file
+vcf <- read.vcfR(here("Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF/Samples379_Combined_Genotyped.g.vcf"))
+vcf
+# Extract sample names
+vcf_sample_names <- colnames(vcf@gt)[-1] %>% as.data.frame()
+
+colnames(vcf_sample_names) = "sample_names"
+vcf_sample_names
+```
+```{r}
+vcf_sample_names_2 = vcf_sample_names %>% 
+  mutate(participant_ids = sample_names) %>% 
+  mutate(participant_ids = gsub("\\D", "", participant_ids)) %>% # retain only numbers
+  mutate(participant_ids = as.numeric(participant_ids))
+vcf_sample_names_2
+```
+## merge the dataframe to bring names in same order
+it also retains only those samples which are present in 384 samples currently used
+```{r}
+vcf_sample_names_2_metadata_raw_3 = left_join(vcf_sample_names_2, metadata_raw_3,
+                                              by=c("participant_ids" = "Participant_id"))
+
+vcf_sample_names_2_metadata_raw_3
+```
+# replace the sample names in vcf file
+```{r}
+# Replace sample names
+colnames(vcf@gt) <- c("FORMAT", vcf_sample_names_2_metadata_raw_3$sampleid)
+
+
+# Write the updated VCF back to a file
+write.vcf(vcf,
+          file=here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed.g.vcf.gz"))
+# Unzip the gz file
+R.utils::gunzip(here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed.g.vcf.gz"),
+              destname = here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed.g.vcf"),
+              overwrite = TRUE)
+```
+
+# Phenotype
+```{r}
+Phenotype = vcf_sample_names_2_metadata_raw_3 %>% 
+  dplyr::select(sampleid, Family_id, cariesfree_eccsecc)
+
+write.table(Phenotype,
+     here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Phenotype.txt"),
+     col.names = F,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
+
+# Phenotype_with_sex_info
+```{r}
+Phenotype_with_sex_info = vcf_sample_names_2_metadata_raw_3 %>% 
+  dplyr::select(sampleid, Family_id, child_sex, cariesfree_eccsecc)
+
+write.table(Phenotype_with_sex_info,
+     here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Phenotype_with_sex_info.txt"),
+     col.names = F,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
+
+
