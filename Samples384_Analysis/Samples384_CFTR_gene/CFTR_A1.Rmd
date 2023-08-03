@@ -61,14 +61,14 @@ write.table(CFTR_hg38_bed_w_gene_name,
 # Activate conda environment
 conda activate GATK_env
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene
-mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files
 # Function for processing each file
 process_gatk_HaplotypeCaller() {
   #file=$1
   SAMPLE_NAME=$(basename $1 | sed -e 's/_BQSR_dedup_sample_final.bam//')
   echo "Now processsing: "$SAMPLE_NAME
-  out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files
+  out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files
   _JAVA_OPTIONS="-Xmx90g" gatk HaplotypeCaller \
   -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
   -I $1 \
@@ -76,7 +76,7 @@ process_gatk_HaplotypeCaller() {
   -bamout $out_dir/${SAMPLE_NAME}_reassamble_sample.out.bam \
   -ERC GVCF \
   --assembly-region-padding 100 \
-  -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/CFTR_hg38.bed
+  -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/CFTR_hg38.bed
 }
 
 export -f process_gatk_HaplotypeCaller
@@ -89,12 +89,12 @@ ls    ${input_dir}/*_BQSR_dedup_sample_final.bam                                
 ```{bash}
 conda activate GATK_env
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files/
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files/
 ref_file=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
 # Start the CombineGVCFs command
 cmd='_JAVA_OPTIONS="-Xmx90g" gatk CombineGVCFs -R ${ref_file} '
 # provide reference file
-cmd+= " -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/CFTR_hg38.bed"
+cmd+= " -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/CFTR_hg38.bed"
 # Add the output argument
 cmd+=" -O Samples384_Combined_CFTR.g.vcf"
 # Add each GVCF file to the command
@@ -110,7 +110,7 @@ eval $cmd
 ```{bash}
 conda activate GATK_env
 
-cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files/
+cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files/
 
 _JAVA_OPTIONS="-Xmx90g" gatk GenotypeGVCFs \
 -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
@@ -122,7 +122,7 @@ _JAVA_OPTIONS="-Xmx90g" gatk GenotypeGVCFs \
 As We do not have metadata for these samples
 
 ```{bash}
-cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files/
+cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files/
 # ./BS_106,./BS_Chrim_25,./BS_Chrim_59,./BS_Chrim_77,./BS_Chrim_79
 bcftools view \
 -s ^./BS_103,./BS_Chrim_25,./BS_Chrim_59,./BS_Chrim_77,./BS_Chrim_79 \
@@ -143,7 +143,7 @@ grep '^#CHROM' Samples379_Combined_CFTR_Genotyped.g.vcf | cut -f10-
 ## to match the sample names with plink phenotype file we need to remove "./" from all files
 and "_ii" from some files
 ```{bash}
-cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files/
+cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files/
 sed '/^#CHROM/ s/\.\///g; s/_ii//g' Samples379_Combined_CFTR_Genotyped.g.vcf > \
 Samples379_Combined_CFTR_Genotyped_renamed.g.vcf
 
@@ -151,10 +151,10 @@ Samples379_Combined_CFTR_Genotyped_renamed.g.vcf
 
 
 ```{bash}
-mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/Plink_analysis
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/Plink_analysis
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
 
-input_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/GATK_bam_files
+input_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files
 
 bgzip \
 -c ${input_dir}/Samples379_Combined_CFTR_Genotyped_renamed.g.vcf > \
@@ -190,20 +190,35 @@ bcftools view -H Samples379_Combined_CFTR_w_snpIDs_vcftoolsFilt.g.vcf | wc -l
 
 ```{bash}
 conda activate Plink_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_CFTR_gene/Plink_analysis
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Metadata_files
+
 plink \
 --vcf ./Samples379_Combined_CFTR_w_snpIDs_vcftoolsFilt.g.vcf \
 --double-id \
 --make-bed \
 --keep-allele-order \
---make-pheno ./Samples379_Combined_Phenotype.txt 1 \
---update-sex ./Samples379_Combined_Phenotype_with_sex_info.txt \
+--make-pheno ${metadata_dir}/Samples379_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples379_Combined_Phenotype_with_sex_info.txt \
 --recode \
---out ./Samples379_Combined_Plink
+--out ./Samples379_Combined_CFTR_Plink
 ```
 
 
 ```{bash}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
+plink \
+--file ./Samples379_Combined_CFTR_Plink \
+--geno 0.05 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.05 \
+--recode vcf \
+--assoc \
+--allow-no-sex \
+--out ./Samples379_Combined_CFTR_Plink_filtered_geno.05_maf.01_hwe.05
 ```
 
 

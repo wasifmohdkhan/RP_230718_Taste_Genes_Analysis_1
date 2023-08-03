@@ -40,7 +40,7 @@ metadata_raw_2 %>% group_by(cariesfree_eccsecc) %>% summarise(n = n())
 metadata_raw_3 = metadata_raw_2 %>% 
   mutate(sampleid = str_pad(Participant_id, width = 3, pad = "0"),
          sampleid = paste0("BS", sampleid),
-         Family_id = 0) %>%
+         Family_id = sampleid) %>%
   mutate(child_sex = case_when( # AS Original in data 1, Female | 2, Male 
     child_sex == 1 ~ "Female",
     child_sex == 2 ~ "Male")) %>% 
@@ -112,7 +112,7 @@ Phenotype = vcf_sample_names_2_metadata_raw_3 %>%
   dplyr::select(sampleid, Family_id, cariesfree_eccsecc)
 
 write.table(Phenotype,
-     here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Phenotype.txt"),
+     here("Samples384_Analysis/Metadata_files/Samples379_Combined_Phenotype.txt"),
      col.names = F,
      row.names = F,
      quote = F,
@@ -126,7 +126,7 @@ Phenotype_with_sex_info = vcf_sample_names_2_metadata_raw_3 %>%
   dplyr::select(sampleid, Family_id, child_sex, cariesfree_eccsecc)
 
 write.table(Phenotype_with_sex_info,
-     here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Phenotype_with_sex_info.txt"),
+     here("Samples384_Analysis/Metadata_files/Samples379_Combined_Phenotype_with_sex_info.txt"),
      col.names = F,
      row.names = F,
      quote = F,

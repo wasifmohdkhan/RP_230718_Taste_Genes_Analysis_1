@@ -197,14 +197,15 @@ as it is a duplicated sample of either 102 or 103
 
 ```{bash}
 conda activate Plink_env
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Metadata_files
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
 plink \
 --vcf ./Samples379_Combined_Genotyped_renamed_w_snpIDs_filtered.g.vcf \
 --double-id \
 --make-bed \
 --keep-allele-order \
---make-pheno ./Samples379_Combined_Phenotype.txt 1 \
---update-sex ./Samples379_Combined_Phenotype_with_sex_info.txt \
+--make-pheno ${metadata_dir}/Samples379_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples379_Combined_Phenotype_with_sex_info.txt \
 --recode \
 --out ./Samples379_Combined_Plink
 ```
@@ -224,7 +225,7 @@ plink \
 plink \
 --bfile ./Samples379_Combined_Plink \
 --freq \
---within ./Samples379_Combined_Phenotype.txt \
+--within /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Metadata_files/Samples379_Combined_Phenotype.txt \
 --out ./Samples379_Combined_Plink_genes_freq_stat_by_caries
 ```
 
