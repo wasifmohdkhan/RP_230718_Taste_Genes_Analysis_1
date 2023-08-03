@@ -40,7 +40,7 @@ metadata_raw_2 %>% group_by(cariesfree_eccsecc) %>% summarise(n = n())
 metadata_raw_3 = metadata_raw_2 %>% 
   mutate(sampleid = str_pad(Participant_id, width = 3, pad = "0"),
          sampleid = paste0("BS", sampleid),
-         Family_id = sampleid) %>%
+         Family_id = 0) %>%
   mutate(child_sex = case_when( # AS Original in data 1, Female | 2, Male 
     child_sex == 1 ~ "Female",
     child_sex == 2 ~ "Male")) %>% 

@@ -12,10 +12,40 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(here)
+# Load the package
+library(openxlsx)
 ```
 https://speciationgenomics.github.io/filtering_vcfs/
 
+## annotate snps for dbSNPs
 ```{bash}
+## the reference file
+<!-- bgzip \ -->
+<!-- -c /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf > \ -->
+<!-- /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz -->
+
+<!-- tabix \ -->
+<!-- -p vcf \ -->
+<!-- /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz -->
+```
+
+
+```{bash}
+#bcftools annotate requires bgzipped files
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+bgzip \
+-c ./Samples379_Combined_Genotyped_renamed.g.vcf > \
+Samples379_Combined_Genotyped_renamed.g.vcf.gz
+
+tabix \
+-p vcf \
+Samples379_Combined_Genotyped_renamed.g.vcf.gz
+
+bcftools annotate \
+-a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
+-c ID \
+Samples379_Combined_Genotyped_renamed.g.vcf.gz > \
+Samples379_Combined_Genotyped_renamed_w_snpIDs.g.vcf
 
 ```
 
@@ -26,29 +56,29 @@ mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sam
 ## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
 
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
-out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
-VCF_file=Samples379_Combined_Genotyped_renamed.g.vcf
+file_prefix=Samples379_Combined_Genotyped_renamed_w_snpIDs
+
 
 # Calculate allele frequency
-vcftools --vcf $VCF_file --out $out_dir --freq2  --max-alleles 2
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --freq2  --max-alleles 2
 # Calculate mean depth per individual
-vcftools --vcf $VCF_file --out $out_dir --depth
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --depth
 # Calculate mean depth per site
-vcftools --vcf $VCF_file --out $out_dir --site-mean-depth
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --site-mean-depth
 # Calculate site quality
-vcftools --vcf $VCF_file --out $out_dir --site-quality 
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --site-quality 
 # Calculate proportion of missing data per individual
-vcftools --vcf $VCF_file --out $out_dir --missing-indv
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --missing-indv
 # Calculate proportion of missing data per site
-vcftools --vcf $VCF_file --out $out_dir --missing-site
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --missing-site
 # Calculate heterozygosity and inbreeding coefficient per individual
-vcftools --vcf $VCF_file --out $out_dir --het 
+vcftools --vcf $file_prefix.g.vcf --out $file_prefix --het 
 
 ```
 
 # Variant quality
 ```{r}
-var_qual <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.lqual"),
+var_qual <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.lqual"),
                        delim = "\t", col_names = c("chr", "pos", "qual"), skip = 1)
 a <- ggplot(var_qual, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
@@ -57,7 +87,7 @@ a + theme_light() + xlim(0, 100)
 
 # Variant mean depth
 ```{r}
-var_depth <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.ldepth.mean"),
+var_depth <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.ldepth.mean"),
                         delim = "\t", col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
 a <- ggplot(var_depth, aes(mean_depth)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
@@ -69,7 +99,7 @@ a + theme_light() + xlim(0, 50)
 
 # Variant missingness
 ```{r}
-var_miss <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.lmiss"),
+var_miss <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.lmiss"),
                        delim = "\t", col_names = c("chr", "pos", "nchr", "nfiltered", "nmiss", "fmiss"), skip = 1)
 a <- ggplot(var_miss, aes(fmiss)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
@@ -80,7 +110,7 @@ summary(var_miss$fmiss)
 
 # Minor allele frequency
 ```{r}
-var_freq <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.frq"),
+var_freq <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.frq"),
                        delim = "\t", col_names = c("chr", "pos", "nalleles", "nchr", "a1", "a2"), skip = 1)
 # find minor allele frequency
 var_freq$maf <- var_freq %>% select(a1, a2) %>% apply(1, function(z) min(z))
@@ -93,7 +123,7 @@ summary(var_freq$maf)
 # Individual based statistics
 # Mean depth per individual
 ```{r}
-ind_depth <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.idepth"),
+ind_depth <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.idepth"),
                         delim = "\t", col_names = c("ind", "nsites", "depth"), skip = 1)
 a <- ggplot(ind_depth, aes(depth)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
@@ -101,7 +131,7 @@ a + theme_light()
 
 # Proportion of missing data per individual
 ```{r}
-ind_miss  <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.imiss"),
+ind_miss  <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.imiss"),
                         delim = "\t", col_names = c("ind", "ndata", "nfiltered", "nmiss", "fmiss"), skip = 1)
 a <- ggplot(ind_miss, aes(fmiss)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
@@ -109,7 +139,7 @@ a + theme_light()
 
 # Heterozygosity and inbreeding coefficient per individual
 ```{r}
-ind_het <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_gvcf.het"),
+ind_het <- read_delim(here("./Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Genotyped_renamed_w_snpIDs.het"),
                       delim = "\t", col_names = c("ind","ho", "he", "nsites", "f"), skip = 1)
 a <- ggplot(ind_het, aes(f)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
@@ -128,11 +158,11 @@ a + theme_light()
         
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
 root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
-VCF_IN=$root_dir/Samples379_Combined_Genotyped_renamed.g.vcf
-VCF_OUT=$root_dir/Samples379_Combined_Genotyped_renamed_filtered.g.vcf
+VCF_IN=$root_dir/Samples379_Combined_Genotyped_renamed_w_snpIDs.g.vcf
+VCF_OUT=$root_dir/Samples379_Combined_Genotyped_renamed_w_snpIDs_filtered.g.vcf
 
 # set filters
-MAF=0.01
+MAF=0.00
 MAX_MISS=0.5 # default 0.5, somewhat counter-intuitive 0 is totally missing, 1 is none missing
 QUAL=30 # default 30
 MIN_DEPTH=5 # default 5
@@ -169,7 +199,7 @@ as it is a duplicated sample of either 102 or 103
 conda activate Plink_env
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
 plink \
---vcf ./Samples379_Combined_Genotyped_renamed_filtered.g.vcf \
+--vcf ./Samples379_Combined_Genotyped_renamed_w_snpIDs_filtered.g.vcf \
 --double-id \
 --make-bed \
 --keep-allele-order \
@@ -206,33 +236,267 @@ plink \
 --out ./Samples379_Combined_Plink_test_missing
 ```
 
+copied and saved run-diffmiss-qc.pl from https://github.com/guigotoe/ExomeChip/blob/master/bin/run-diffmiss-qc.pl
+into the /home/wasif_pclab/anaconda3/envs/Plink_env/bin
+```{bash}
+conda activate Plink_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+perl /home/wasif_pclab/anaconda3/envs/Plink_env/bin/run-diffmiss-qc.pl \
+./Samples379_Combined_Plink_test_missing
+```
+
+#In a Unix/Linux environment, one could simply use the available command line tools to sort the list of association statistics and print out the top ten, for example:
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+sort --key=1 -nr ./fail-diffmiss-qc.txt | head
+#output - no snps selected
+<!-- . -->
+<!-- . -->
+```
+
 # filter
 ```{bash}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
 plink \
 --file ./Samples379_Combined_Plink \
---exclude /media/prashen/Second_stor/Vivianne/T2R_sequences/December_2021/All_VCFs/PLINK/Dividing_39_7_genes/Feb26_filtering_depth/All_Variants_39_genes.fail-diffmiss-qc.txt \
---geno 0.05 \
---maf 0.01 \
+--geno 0.5 \
+--maf 0.0001 \
 --not-chr x \
---hwe 0.05 \
---recode \
---out /media/prashen/Second_stor/Vivianne/T2R_sequences/December_2021/All_VCFs/PLINK/Dividing_39_7_genes/Feb26_filtering_depth/All_Variants_39_genes_FILT
+--hwe 0.0001 \
+--recode vcf \
+--assoc \
+--allow-no-sex \
+--out ./Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001
+
+# output
+<!-- 626 variants removed due to missing genotype data (--geno). -->
+<!-- --hwe: 134 variants removed due to Hardy-Weinberg exact test. -->
+<!-- 0 variants removed due to minor allele threshold(s) -->
+<!-- (--maf/--max-maf/--mac/--max-mac). -->
+<!-- 287 variants and 379 people pass filters and QC. -->
+<!-- Among remaining phenotypes, 240 are cases and 139 are controls. -->
+<!-- --recode ped to ./Samples379_Combined_Plink.ped + -->
+<!-- ./Samples379_Combined_Plink.map ... done. -->
 ```
 
 
 ```{bash}
+
 ```
 
 
+# do not use --adjust command as the output file does not contain base positions
+adjusted pvalue can be calculated from the --assoc file in R
 ```{bash}
+
 ```
 
 
+
+
 ```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/VCFtoPLINK
+conda activate SnpEff_env
+
+snpEff \
+-v hg38 \
+./Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001.vcf > \
+./Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001_anno.vcf
+```
+
+# add genes to the plink assoc file and 
+
+
+```{r}
+
+# Read VCF file
+vcf <- read.vcfR(here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001_anno.vcf"))
+
+
+# Extract chromosome and position
+chrom <- vcf@fix[,1]
+pos <- vcf@fix[,2]
+
+# Extract the INFO column
+info <- vcf@fix[,8]
+
+# Extract the ANN information from INFO by removing the 'ANN=' prefix
+ann_info <- gsub("^ANN=", "", info)
+
+# Each element of 'ann_info' can have multiple annotations (separated by comma),
+# and each annotation has multiple sub-fields (separated by '|').
+
+# Function to parse a single annotation
+parse_ann <- function(ann) {
+  # Split the annotation into sub-fields
+  sub_fields <- strsplit(ann, "\\|")[[1]]
+  
+  # Return the gene name and variant type if they exist
+  if (length(sub_fields) >= 4) {
+    return(c(sub_fields[4], sub_fields[2])) # sub_fields[2] contains the variant type
+  } else {
+    return(c(NA, NA))
+  }
+}
+
+# Parse the ANN field for each variant
+genes_and_variant_types <- t(sapply(ann_info, parse_ann)) # transpose to make each gene-variant pair a row
+
+# Create a dataframe with the chromosome, position, gene name, and variant type
+df_chromPOS_to_gene_variant <- data.frame(CHROM = chrom, POS = pos, GENE = genes_and_variant_types[,1], VARIANT_TYPE = genes_and_variant_types[,2])
+df_chromPOS_to_gene_variant
+```
+
+## Assign gene name to assoc file
+```{r}
+assoc_file = read.table(here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001.assoc"),
+                        header = T)
+assoc_file
+assoc_file = assoc_file %>% 
+  mutate(BP = as.character(BP),
+         CHR = as.character(CHR))
+  
+assoc_file
+```
+
+# merge
+```{r}
+assoc_file_df_chromPOS_to_gene_variant =  inner_join(assoc_file, df_chromPOS_to_gene_variant,
+                                             by = c("CHR" = "CHROM", "BP" = "POS"))
+assoc_file_df_chromPOS_to_gene_variant
+
+assoc_file_df_chromPOS_to_gene_variant_adjP = assoc_file_df_chromPOS_to_gene_variant %>% 
+  mutate(p_BH = p.adjust(P, method = "BH"),
+         p_bonferroni = p.adjust(P, method = "bonferroni") ) %>% 
+  arrange(p_bonferroni) %>% 
+  mutate(BP= as.numeric(BP))
+assoc_file_df_chromPOS_to_gene_variant_adjP
+```
+```{r}
+# Set the size of the graphic device
+dev.new(width=18, height=6)
+
+# Prepare the data
+gwas_results <- assoc_file_df_chromPOS_to_gene_variant_adjP %>%
+  mutate(log_p_bonferroni = -log10(p_bonferroni)) %>%
+  arrange(as.numeric(CHR), BP) %>%
+  mutate(LABEL = paste(SNP, GENE, VARIANT_TYPE, sep = "_"))  # create new LABEL column
+
+# Create an ordered factor for GENE based on the order in the arranged dataframe
+gwas_results$GENE <- factor(gwas_results$GENE, levels = unique(gwas_results$GENE))
+
+# Set a color palette with a large number of colors
+num_colors <- length(unique(gwas_results$GENE))
+my_palette <- rainbow(num_colors)
+
+# Shuffle the palette
+set.seed(123)  # for reproducible results
+my_palette <- sample(my_palette)
+
+# Create a scatter plot
+manhattan_plot = ggplot(gwas_results, aes(x = GENE, y = log_p_bonferroni, color = GENE)) +
+  geom_point(alpha = 0.5) +
+  scale_color_manual(values = my_palette) +
+  geom_hline(yintercept = 1.3, linetype = "dashed", color = "red") +
+  geom_text(data = subset(gwas_results, log_p_bonferroni > 3.5), aes(label = LABEL), size = 4, vjust = 0, hjust = 0,check_overlap = F) +
+  # ggrepel::geom_text_repel(data = subset(gwas_results, log_p_bonferroni > 4), aes(label = LABEL), 
+  #                        nudge_x = 0., nudge_y = 0.0, size = 3, check_overlap = F) +
+  labs(x = "GENEs arranged based on chr positions", y = "-log10(p_bonferroni)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10)) +
+  guides(color = FALSE)
+
+
+
+# Save the plot
+ggsave(here("Samples384_Analysis/VCFtoPLINK/Samples379_55genes_manhattan_plot.png"),
+       plot = manhattan_plot,
+       width = 18, height = 6, dpi = 450)
+manhattan_plot
 ```
 
 
-```{bash}
+```{r}
+assoc_file_df_chromPOS_to_gene_variant_adjP_2= assoc_file_df_chromPOS_to_gene_variant_adjP %>% 
+  # scientific notation for  the values where there are more than 3 0s after the decimal and 
+    mutate_if(is.numeric, ~ ifelse(str_detect(sprintf("%.5f", .), "^0\\.000"), formatC(., format = "e", digits = 3), .)) 
+
+assoc_file_df_chromPOS_to_gene_variant_adjP_2
+
+
+```
+
+
+```{r}
+# Create a new workbook
+wb <- createWorkbook()
+
+# Add your data frame (df) to the first sheet
+addWorksheet(wb, "Plink_association")
+writeData(wb, "Plink_association", assoc_file_df_chromPOS_to_gene_variant_adjP_2)
+
+# Define explanations
+explanations <- data.frame(Column = c("CHR", "SNP", "BP", "A1", "F_A", "F_U", "A2", 
+                                      "CHISQ", "P", "OR", "CHROM", "GENE", "VARIANT_TYPE", 
+                                      "p_BH", "p_bonferroni"),
+                           Explanation = c("The chromosome on which the SNP resides.",
+                                           "The ID of the SNP.",
+                                           "The base-pair position of the SNP on the chromosome.",
+                                           "The minor allele of the SNP (the less common variant).",
+                                           "The frequency of the minor allele (A1) in the Affected (diseased) group.",
+                                           "The frequency of the minor allele (A1) in the Unaffected (control) group.",
+                                           "The major allele of the SNP (the more common variant).",
+                                           "The chi-square statistic, a measure of the difference between observed and expected frequencies in a statistical test.",
+                                           "The p-value for the association between the SNP and the phenotype of interest.",
+                                           "The odds ratio. This value is present if the phenotype is binary.",
+                                           "Chromosome where the SNP is located. Seems redundant with CHR, unless it's used in a different context within your data.",
+                                           "The gene in which the SNP is located.",
+                                           "The type of variant the SNP represents. Typically, SNPs are either missense, nonsense, synonymous, or in a non-coding region.",
+                                           "The p-value adjusted by the Benjamini-Hochberg method, which controls the false discovery rate (FDR).",
+                                           "The p-value adjusted by the Benjamini-Yekutieli method, another method to control the FDR, especially under conditions of positive dependence."))
+
+# Add explanations to the "Explanations" sheet
+addWorksheet(wb, "Explanations")
+writeData(wb, "Explanations", explanations)
+
+# Save the workbook
+saveWorkbook(wb,
+             here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001_assoc_gene_Padj.xlsx"),
+             overwrite = T)
+```
+
+```{r}
+assoc_file_df_chromPOS_to_gene_variant_adjP_3 = assoc_file_df_chromPOS_to_gene_variant_adjP %>% 
+  filter(p_bonferroni < 0.05) %>% 
+  arrange(GENE) %>% 
+  mutate(Location_GRCh38 = paste0("chr", CHR, ":", BP),
+         Effect_allele = A1,
+         Allele_frq_ECC = F_A,
+         Allele_frq_CF = F_U) %>% 
+  mutate(OR = ifelse(OR < 0.001, "<0.001", formatC(OR, format = "f", digits = 3)),
+         Allele_frq_ECC = ifelse(Allele_frq_ECC < 0.001, "<0.001", formatC(Allele_frq_ECC, format = "f", digits = 3)),
+         Allele_frq_CF = ifelse(Allele_frq_CF < 0.001, "<0.001", formatC(Allele_frq_CF, format = "f", digits = 3)),
+         P = formatC(P, format = "e", digits = 2),
+         p_bonferroni = formatC(p_bonferroni, format = "e", digits = 2)  ) %>% 
+  dplyr::select(GENE, SNP, Location_GRCh38, Effect_allele, Allele_frq_ECC, Allele_frq_CF, CHISQ, P, OR, p_bonferroni, VARIANT_TYPE)
+assoc_file_df_chromPOS_to_gene_variant_adjP_3
+```
+```{r}
+# Load packages
+library(flextable)
+library(officer)
+
+# Convert dataframe to flextable
+ft <- flextable::flextable(assoc_file_df_chromPOS_to_gene_variant_adjP_3)
+
+# Create new Word document and add the table
+doc <- officer::read_docx()
+doc <- flextable::body_add_flextable(doc, value = ft)
+
+# Save the Word document
+print(doc,
+               target = here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001_assoc_gene_Padj.docx"))
 ```
 
 
