@@ -6,3 +6,10 @@
 *.nosex
 *.ped
 *.bed
+*.assoc
+*.vcf
+*.vcf.gz
+*.vcf.gz.tbi
+*.html
+*.raw
+Samples379_Combined_CFTR_Genotyped_renamed.g.vcf.gz

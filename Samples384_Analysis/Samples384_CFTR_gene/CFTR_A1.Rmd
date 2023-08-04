@@ -141,17 +141,18 @@ grep '^#CHROM' Samples379_Combined_CFTR_Genotyped.g.vcf | cut -f10-
 ```
 
 ## to match the sample names with plink phenotype file we need to remove "./" from all files
+so that ./BS_??? become BS???
 and "_ii" from some files
 ```{bash}
 cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files/
-sed '/^#CHROM/ s/\.\///g; s/_ii//g' Samples379_Combined_CFTR_Genotyped.g.vcf > \
+sed '/^#CHROM/ s/\.\/BS_/BS/g; s/_ii//g' Samples379_Combined_CFTR_Genotyped.g.vcf > \
 Samples379_Combined_CFTR_Genotyped_renamed.g.vcf
 
 ```
 
 
 ```{bash}
-mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
 
 input_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/GATK_bam_files
@@ -211,14 +212,92 @@ conda activate Plink_env
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
 plink \
 --file ./Samples379_Combined_CFTR_Plink \
---geno 0.05 \
+--geno 0.2 \
 --maf 0.01 \
 --not-chr x \
---hwe 0.05 \
+--hwe 0.001 \
 --recode vcf \
 --assoc \
 --allow-no-sex \
---out ./Samples379_Combined_CFTR_Plink_filtered_geno.05_maf.01_hwe.05
+--out ./Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001
 ```
 
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
+conda activate SnpEff_env
 
+snpEff \
+-v hg38 \
+./Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001.vcf > \
+./Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001_anno.vcf
+```
+```{r}
+
+# Read VCF file
+vcf <- read.vcfR(here("Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis/Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001_anno.vcf"))
+
+
+# Extract chromosome and position
+chrom <- vcf@fix[,1]
+pos <- vcf@fix[,2]
+
+# Extract the INFO column
+info <- vcf@fix[,8]
+
+# Extract the ANN information from INFO by removing the 'ANN=' prefix
+ann_info <- gsub("^ANN=", "", info)
+
+# Each element of 'ann_info' can have multiple annotations (separated by comma),
+# and each annotation has multiple sub-fields (separated by '|').
+
+# Function to parse a single annotation
+parse_ann <- function(ann) {
+  # Split the annotation into sub-fields
+  sub_fields <- strsplit(ann, "\\|")[[1]]
+  
+  # Return the gene name and variant type if they exist
+  if (length(sub_fields) >= 4) {
+    return(c(sub_fields[4], sub_fields[2])) # sub_fields[2] contains the variant type
+  } else {
+    return(c(NA, NA))
+  }
+}
+
+# Parse the ANN field for each variant
+genes_and_variant_types <- t(sapply(ann_info, parse_ann)) # transpose to make each gene-variant pair a row
+
+# Create a dataframe with the chromosome, position, gene name, and variant type
+df_chromPOS_to_gene_variant <- data.frame(CHROM = chrom, POS = pos, GENE = genes_and_variant_types[,1], VARIANT_TYPE = genes_and_variant_types[,2])
+df_chromPOS_to_gene_variant
+```
+## Assign gene name to assoc file
+```{r}
+assoc_file = read.table(here("Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis/Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001.assoc"),
+                        header = T)
+assoc_file
+assoc_file = assoc_file %>% 
+  mutate(BP = as.character(BP),
+         CHR = as.character(CHR))
+  
+assoc_file
+```
+
+# merge
+```{r}
+assoc_file_df_chromPOS_to_gene_variant =  inner_join(assoc_file, df_chromPOS_to_gene_variant,
+                                             by = c("CHR" = "CHROM", "BP" = "POS"))
+assoc_file_df_chromPOS_to_gene_variant
+
+assoc_file_df_chromPOS_to_gene_variant_adjP = assoc_file_df_chromPOS_to_gene_variant %>% 
+  mutate(p_BH = p.adjust(P, method = "BH"),
+         p_bonferroni = p.adjust(P, method = "bonferroni") ) %>% 
+  arrange(p_bonferroni) %>% 
+  mutate(BP= as.numeric(BP))
+assoc_file_df_chromPOS_to_gene_variant_adjP
+
+write.table(assoc_file_df_chromPOS_to_gene_variant_adjP,
+            here("Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis/Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001_assoc_w_GENE.csv"),
+            row.names = F,
+            quote = F,
+            sep = ",")
+```

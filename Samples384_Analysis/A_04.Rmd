@@ -497,11 +497,12 @@ doc <- flextable::body_add_flextable(doc, value = ft)
 
 # Save the Word document
 print(doc,
-               target = here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001_assoc_gene_Padj.docx"))
+      target = here("Samples384_Analysis/VCFtoPLINK/Samples379_Combined_Plink_filtered_geno.5_maf.0001_hwe.0001_assoc_gene_Padj.docx"))
 ```
 
 
 ```{bash}
+
 ```
 
 

@@ -1,0 +1,4 @@
+# The following table is formatted as tab separated values. 
+#GeneName	GeneId	TranscriptId	BioType	variants_impact_LOW	variants_impact_MODERATE	variants_impact_MODIFIER	variants_effect_5_prime_UTR_variant	variants_effect_intron_variant	variants_effect_missense_variant	variants_effect_synonymous_variant
+CFTR	CFTR	NM_000492.4	protein_coding	7	3	12	1	11	3	7
+CFTR-AS1	CFTR-AS1	NR_149084.1		0	0	2	0	2	0	0
