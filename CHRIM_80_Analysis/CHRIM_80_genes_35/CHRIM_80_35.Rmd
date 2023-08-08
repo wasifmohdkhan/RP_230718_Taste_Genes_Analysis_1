@@ -1,0 +1,109 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35
+
+# make a new dir to store GATK output files
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+# Activate conda environment
+conda activate GATK_env
+
+
+process_picard_RevertSam() {
+  SAMPLE_NAME=$(basename "$1" | sed -E 's/.*\.(S[0-9]+)\.bam/\1/')
+# RevertSam process to be given to parallel processing
+
+out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+  picard RevertSam \
+    I=$1 \
+    O=${out_dir}/${SAMPLE_NAME}_RevertSam.bam \
+    SANITIZE=true \
+    MAX_DISCARD_FRACTION=0.005 \
+    ATTRIBUTE_TO_CLEAR=XT \
+    ATTRIBUTE_TO_CLEAR=XN \
+    ATTRIBUTE_TO_CLEAR=AS \
+    ATTRIBUTE_TO_CLEAR=OC \
+    ATTRIBUTE_TO_CLEAR=OP \
+    ATTRIBUTE_TO_CLEAR=XS \
+    SORT_ORDER=queryname  \
+    RESTORE_ORIGINAL_QUALITIES=true \
+    REMOVE_DUPLICATE_INFORMATION=true \
+    REMOVE_ALIGNMENT_INFORMATION=true
+    
+  
+  
+}
+# Export the function so it can be used by parallel
+export -f process_picard_RevertSam
+
+# pass them to parallel
+in_dir=/media/Second_stor/prashen/Vivianne/T2R_sequences/raw_bam_new_May_2019
+# try with one files
+ls $in_dir/*S10.bam   | parallel -j 20 process_picard_RevertSam
+#ls $in_dir/*.bam | parallel -j 20 process_picard_RevertSam
+
+# takes about 30 minutes
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+process_picard_MarkIlluminaAdapters() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_RevertSam.bam//')
+  
+  _JAVA_OPTIONS="-Xmx90g" picard MarkIlluminaAdapters \
+    I=${SAMPLE_NAME}_RevertSam.bam \
+    O=${SAMPLE_NAME}_markilluminaadapters.bam \
+    M=${SAMPLE_NAME}_markilluminaadapters_metrics.txt
+    
+
+}
+# Export the function so it can be used by parallel
+export -f process_picard_MarkIlluminaAdapters
+
+#find . -name "*S1_RevertSam.bam" | parallel -j 40 process_picard_MarkIlluminaAdapters # for one file
+find . -name "*_RevertSam.bam"   | parallel -j 40 process_picard_MarkIlluminaAdapters
+
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
