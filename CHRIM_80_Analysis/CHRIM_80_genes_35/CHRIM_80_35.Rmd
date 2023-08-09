@@ -24,7 +24,7 @@ process_picard_RevertSam() {
 # RevertSam process to be given to parallel processing
 
 out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-  picard RevertSam \
+  _JAVA_OPTIONS="-Xmx90g" picard RevertSam \
     I=$1 \
     O=${out_dir}/${SAMPLE_NAME}_RevertSam.bam \
     SANITIZE=true \
@@ -39,9 +39,6 @@ out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/C
     RESTORE_ORIGINAL_QUALITIES=true \
     REMOVE_DUPLICATE_INFORMATION=true \
     REMOVE_ALIGNMENT_INFORMATION=true
-    
-  
-  
 }
 # Export the function so it can be used by parallel
 export -f process_picard_RevertSam
@@ -145,11 +142,10 @@ ls *_markilluminaadapters.bam     | parallel -j 10 process_SamToFastq_bwa_MergeB
 conda activate GATK_env
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
 
-mkdir -p ./Fastqc_report/MultiQC_report
 /home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
 --interactive --force \
 ./Fastqc_report \
--o ./Fastqc_report/MultiQC_report
+-o ./Fastqc_report
 ```
 
 
@@ -173,15 +169,26 @@ cp /media/Second_stor/prashen/Vivianne/T2R_sequences/Taste_Genes_38_BEDfile.bed 
 ```
 
 
+## create an interval file from bed to be used in picard_CollectWgsMetrics
+
+```{bash}
+conda activate GATK_env
+picard BedToIntervalList \
+      I=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
+      O=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236_bed.interval_list \
+      SD=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.dict
+```
+
+
 ```{bash}
 
 conda activate GATK_env
 
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
 mkdir -p ./Aligned_bamqc/samtools_stats
-mkdir -p ./Aligned_bamqc/samtools_stats/MultiQC_report
+mkdir -p ./Aligned_bamqc/collect_wgs_metrics
 
-process_qualimap_bamqc() {
+process_stats_CollectWgsMetrics() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
   samtools stats \
   --target-regions ../CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
@@ -195,71 +202,55 @@ process_qualimap_bamqc() {
   INTERVALS=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236_bed.interval_list
 }
 
-export -f process_qualimap_bamqc
+export -f process_stats_CollectWgsMetrics
 # Run the function in parallel for all *.bam files
-ls *_aligned.bam     | parallel -j 40 process_qualimap_bamqc
+ls *_aligned.bam     | parallel -j 40 process_stats_CollectWgsMetrics
+
+
+```
+
+## MultiQC
+```{bash}
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
 
 /home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
 --interactive --force \
 ./Aligned_bamqc/samtools_stats \
--o ./Aligned_bamqc/samtools_stats/MultiQC_report
+-o ./Aligned_bamqc/samtools_stats
+
+/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+--interactive --force \
+./Aligned_bamqc/collect_wgs_metrics \
+-o ./Aligned_bamqc/collect_wgs_metrics
 ```
 
 ## if everything looks good then previous files can be deleted
 ```{bash}
  cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-  rm *_RevertSam.bam
   rm *_markilluminaadapters.bam
   rm *_markilluminaadapters_metrics.txt
-  rm ./Aligned_bamqc/samtools_stats/*_aligned_bam.stats
 ```
-
-
-## create an interval file from bed to be used in picard_CollectWgsMetrics
-
-```{bash}
-conda activate GATK_env
-picard BedToIntervalList \
-      I=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
-      O=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236_bed.interval_list \
-      SD=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.dict
-```
-
 
 ```{bash}
 conda activate GATK_env
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
 mkdir -p collect_wgs_metrics
 # Function for processing each file
-process_picard_CollectWgsMetrics() {
+process_picard_SortSam() {
   file=$1
   SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
   
-  _JAVA_OPTIONS="-Xmx90g" picard SortSam \
+  _JAVA_OPTIONS="-Xmx80g" picard SortSam \
       I=${SAMPLE_NAME}_aligned.bam \
       O=${SAMPLE_NAME}_sorted.bam \
       SORT_ORDER=coordinate
-   
-      
-
 }
-export -f process_picard_CollectWgsMetrics
+export -f process_picard_SortSam
 
 # Run the function in parallel for all *.bam files
-ls *_aligned.bam  | parallel -j 20 process_picard_CollectWgsMetrics
+ls *_aligned.bam  | parallel -j 20 process_picard_SortSam
 ```
-
-
-```{bash}
-conda activate GATK_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-
-/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
---interactive --force \
-./collect_wgs_metrics \
--o ./collect_wgs_metrics
-```
-
 
 
 ```{bash}
@@ -271,12 +262,10 @@ cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_
 process_MarkDuplicates() {
   file=$1
   SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
-
-
-_JAVA_OPTIONS="-Xmx90g" picard MarkDuplicates \
-INPUT=${SAMPLE_NAME}_sorted.bam \
-OUTPUT=${SAMPLE_NAME}_marked_duplicates.bam \
-M=${SAMPLE_NAME}_marked_dup_metrics.txt
+    _JAVA_OPTIONS="-Xmx80g" picard MarkDuplicates \
+    INPUT=${SAMPLE_NAME}_sorted.bam \
+    OUTPUT=${SAMPLE_NAME}_marked_duplicates.bam \
+    M=${SAMPLE_NAME}_marked_dup_metrics.txt
 }
 export -f process_MarkDuplicates
 
@@ -285,6 +274,47 @@ export -f process_MarkDuplicates
 ls   *_sorted.bam   | parallel -j 2 process_MarkDuplicates # use with one thread only this uses about 35 cores and 25gb of RAM when peaked
 ```
 
+## if everything looks good then previous files can be deleted
+```{bash}
+ cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+  rm *_sorted.bam
+  rm *_aligned.bam
+  rm *_aligned.bai
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+
+ cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+# Function for processing each file
+process_gatk_BaseRecalibrator() {
+  #file=$1
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_marked_duplicates.bam//')
+  
+  ref_file=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
+  _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
+  -R $ref_file \
+  -I $1 \
+  --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
+  --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
+  -O ${SAMPLE_NAME}_recal_data_sample.table
+  
+  _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
+  -R $ref_file \
+  -I $1 \
+  --bqsr-recal-file ${SAMPLE_NAME}_recal_data_sample.table \
+  -O ${SAMPLE_NAME}_BQSR_dedup_sample_final.bam
+}
+
+export -f process_gatk_BaseRecalibrator
+
+# Run the function in parallel for all *.bam files
+#ls *006_marked_duplicates.bam *008_marked_duplicates.bam  | parallel -j 2 process_gatk_BaseRecalibrator
+ls   *_marked_duplicates.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
+```
 
 
 

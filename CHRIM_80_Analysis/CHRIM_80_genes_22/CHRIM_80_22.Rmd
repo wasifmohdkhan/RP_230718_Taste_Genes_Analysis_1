@@ -1,0 +1,178 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22
+# make a new dir to store GATK output files
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+process_picard_RevertSam() {
+  SAMPLE_NAME=$(basename "$1" | sed -E 's/.*\CHRIM_(S[0-9]+)\.bam/\1/')
+# RevertSam process to be given to parallel processing
+
+out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+  _JAVA_OPTIONS="-Xmx90g" picard RevertSam \
+    I=$1 \
+    O=${out_dir}/${SAMPLE_NAME}_RevertSam.bam \
+    SANITIZE=true \
+    MAX_DISCARD_FRACTION=0.005 \
+    ATTRIBUTE_TO_CLEAR=XT \
+    ATTRIBUTE_TO_CLEAR=XN \
+    ATTRIBUTE_TO_CLEAR=AS \
+    ATTRIBUTE_TO_CLEAR=OC \
+    ATTRIBUTE_TO_CLEAR=OP \
+    ATTRIBUTE_TO_CLEAR=XS \
+    SORT_ORDER=queryname  \
+    RESTORE_ORIGINAL_QUALITIES=true \
+    REMOVE_DUPLICATE_INFORMATION=true \
+    REMOVE_ALIGNMENT_INFORMATION=true
+}
+# Export the function so it can be used by parallel
+export -f process_picard_RevertSam
+
+# pass them to parallel
+in_dir=/media/Second_stor/prashen/Vivianne/T2R_sequences/December_2021/Fluidigm_293_CHRIM_samples_80
+# try with one files
+#ls $in_dir/*S10.bam   | parallel -j 20 process_picard_RevertSam
+ls $in_dir/*66.bam     | parallel -j 20 process_picard_RevertSam
+
+# takes about 30 minutes
+```
+
+## add the new folder to the .gitignore file to avoid git uploading of all the gatk intermediate files
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+process_picard_MarkIlluminaAdapters() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_RevertSam.bam//')
+  _JAVA_OPTIONS="-Xmx90g" picard MarkIlluminaAdapters \
+    I=${SAMPLE_NAME}_RevertSam.bam \
+    O=${SAMPLE_NAME}_markilluminaadapters.bam \
+    M=${SAMPLE_NAME}_markilluminaadapters_metrics.txt
+}
+# Export the function so it can be used by parallel
+export -f process_picard_MarkIlluminaAdapters
+
+
+#find . -name "*S1_RevertSam.bam" | parallel -j 40 process_picard_MarkIlluminaAdapters # for one file
+find . -name "*_RevertSam.bam"   | parallel -j 40 process_picard_MarkIlluminaAdapters
+```
+
+
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+mkdir -p Fastqc_report
+mkdir -p Aligned_bamqc
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+# Function for processing each file
+process_SamToFastq_bwa_MergeBamAlignment() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_markilluminaadapters.bam//')
+  # Path to your reference genome
+  REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+
+  # Number of cores
+  THREADS=4
+  _JAVA_OPTIONS="-Xmx90g" picard SamToFastq \
+  I=$1 \
+  FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
+  CLIPPING_ATTRIBUTE=XT \
+  CLIPPING_ACTION=2 \
+  INTERLEAVE=true \
+  NON_PF=true
+  
+  /home/wasif_pclab/anaconda3/envs/fastqc/bin/fastqc \
+  ${SAMPLE_NAME}_samtofastq_interleaved.fq \
+  -o ./Fastqc_report
+  
+  bwa mem -M -t $THREADS \
+  -p ${REF} \
+  ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
+  ${SAMPLE_NAME}_bwa_mem.sam
+  
+  
+  _JAVA_OPTIONS="-Xmx90g" picard MergeBamAlignment \
+  ALIGNED_BAM=${SAMPLE_NAME}_bwa_mem.sam \
+  UNMAPPED_BAM=${SAMPLE_NAME}_RevertSam.bam \
+  OUTPUT=${SAMPLE_NAME}_aligned.bam \
+  REFERENCE_SEQUENCE=${REF} \
+  CREATE_INDEX=true \
+  ADD_MATE_CIGAR=true \
+  CLIP_ADAPTERS=false \
+  CLIP_OVERLAPPING_READS=true \
+  INCLUDE_SECONDARY_ALIGNMENTS=true \
+  MAX_INSERTIONS_OR_DELETIONS=-1 \
+  PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+  ATTRIBUTES_TO_RETAIN=XS
+  
+  rm ${SAMPLE_NAME}_samtofastq_interleaved.fq
+  rm ${SAMPLE_NAME}_bwa_mem.sam
+  rm ${SAMPLE_NAME}_RevertSam.bam
+}
+
+export -f process_SamToFastq_bwa_MergeBamAlignment
+
+# Run the function in parallel for all *.bam files
+#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_SamToFastq_bwa_MergeBamAlignment
+ls *_markilluminaadapters.bam     | parallel -j 10 process_SamToFastq_bwa_MergeBamAlignment
+```
+
+
+```{bash}
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+--interactive --force \
+./Fastqc_report \
+-o ./Fastqc_report
+```
+
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+rm ./Fastqc_report/*_samtofastq_interleaved_fastqc.zip
+rm ./Fastqc_report/*_samtofastq_interleaved_fastqc.html
+```
+
+```{bash}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
