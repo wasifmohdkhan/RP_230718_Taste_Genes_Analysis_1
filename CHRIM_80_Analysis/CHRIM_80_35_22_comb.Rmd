@@ -1,0 +1,81 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{bash}
+
+conda activate GATK_env
+cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/
+mkdir -p ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_35_22_comb
+cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_35_22_comb
+
+process_picard_MergeSamFiles() {
+CHRIM_80_35=~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+CHRIM_80_22=~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+ SAMPLE_NAME=$(basename "$1" | sed -e 's/_BQSR_dedup_sample_final.bam//')
+ 
+ _JAVA_OPTIONS="-Xmx90g" picard MergeSamFiles \
+      I=${CHRIM_80_35}/${SAMPLE_NAME}_BQSR_dedup_sample_final.bam \
+      I=${CHRIM_80_22}/${SAMPLE_NAME}_BQSR_dedup_sample_final.bam \
+      O=${SAMPLE_NAME}_BQSR_merged.bam
+}
+
+# Export the function so it can be used by parallel
+export -f process_picard_MergeSamFiles
+
+# pass them to parallel
+in_dir=~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+# try with one files
+ls $in_dir/*S6_BQSR_dedup_sample_final.bam   | parallel -j 20 process_picard_MergeSamFiles
+#ls $in_dir/*_BQSR_dedup_sample_final.bam     | parallel -j 20 process_picard_MergeSamFiles
+
+```
+
+## create an interval file from bed to be used in picard
+
+```{bash}
+conda activate GATK_env
+picard BedToIntervalList \
+      I=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed \
+      O=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed.interval_list \
+      SD=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.dict
+```
+
+
+```{bash}
+conda activate GATK_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_35_22_comb
+rm -r    ./Aligned_bamqc/samtools_stats
+mkdir -p ./Aligned_bamqc/samtools_stats
+
+rm -r    ./Aligned_bamqc/collect_wgs_metrics
+mkdir -p ./Aligned_bamqc/collect_wgs_metrics
+
+process_stats() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_BQSR_merged.bam//')
+  samtools stats \
+    --target-regions /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed \
+    ${SAMPLE_NAME}_BQSR_merged.bam > \
+    ./Aligned_bamqc/samtools_stats/${SAMPLE_NAME}_aligned_bam.stats
+  
+  _JAVA_OPTIONS="-Xmx90g" picard CollectWgsMetrics \
+    I=${SAMPLE_NAME}_BQSR_merged.bam \
+    O=./Aligned_bamqc/collect_wgs_metrics/${SAMPLE_NAME}_collect_wgs_metrics.txt \
+    R=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+    INTERVALS=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed.interval_list
+}
+
+export -f process_stats
+# Run the function in parallel for all *.bam files
+ls *_BQSR_merged.bam     | parallel -j 40 process_stats
+```
+
