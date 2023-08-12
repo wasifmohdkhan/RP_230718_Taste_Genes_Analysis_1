@@ -123,7 +123,7 @@ conda activate GATK_env
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
 
 # Function for processing each file
-process_SamToFastq_bwa_MergeBamAlignment() {
+process_SamToFastq_bwa() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_markilluminaadapters.bam//')
   # Path to your reference genome
   REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
@@ -131,25 +131,47 @@ process_SamToFastq_bwa_MergeBamAlignment() {
   # Number of cores
   THREADS=4
   _JAVA_OPTIONS="-Xmx90g" picard SamToFastq \
-  I=$1 \
-  FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
-  CLIPPING_ATTRIBUTE=XT \
-  CLIPPING_ACTION=2 \
-  INTERLEAVE=true \
-  NON_PF=true
+      I=$1 \
+      FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
+      CLIPPING_ATTRIBUTE=XT \
+      CLIPPING_ACTION=2 \
+      INTERLEAVE=true \
+      NON_PF=true
   
   /home/wasif_pclab/anaconda3/envs/fastqc/bin/fastqc \
-  ${SAMPLE_NAME}_samtofastq_interleaved.fq \
-  -o ./Fastqc_report
+      ${SAMPLE_NAME}_samtofastq_interleaved.fq \
+      -o ./Fastqc_report
   
   bwa mem -M -t $THREADS \
-  -p ${REF} \
-  ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
-  ${SAMPLE_NAME}_bwa_mem.sam
+      -p ${REF} \
+      ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
+      ${SAMPLE_NAME}_bwa_mem.sam
   
+  rm ${SAMPLE_NAME}_samtofastq_interleaved.fq
+}
+
+export -f process_SamToFastq_bwa
+
+# Run the function in parallel for all *.bam files
+#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_SamToFastq_bwa
+ls *_markilluminaadapters.bam     | parallel -j 10 process_SamToFastq_bwa
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+
+# Function for processing each file
+process_MergeBamAlignment() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_bwa_mem.sam//')
+  # Path to your reference genome
+  REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+
   
   _JAVA_OPTIONS="-Xmx90g" picard MergeBamAlignment \
-  ALIGNED_BAM=${SAMPLE_NAME}_bwa_mem.sam \
+  ALIGNED_BAM=$1 \
   UNMAPPED_BAM=${SAMPLE_NAME}_RevertSam.bam \
   OUTPUT=${SAMPLE_NAME}_aligned.bam \
   REFERENCE_SEQUENCE=${REF} \
@@ -161,19 +183,20 @@ process_SamToFastq_bwa_MergeBamAlignment() {
   MAX_INSERTIONS_OR_DELETIONS=-1 \
   PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
   ATTRIBUTES_TO_RETAIN=XS
-  
-  rm ${SAMPLE_NAME}_samtofastq_interleaved.fq
-  rm ${SAMPLE_NAME}_bwa_mem.sam
-  rm ${SAMPLE_NAME}_RevertSam.bam
 }
 
-export -f process_SamToFastq_bwa_MergeBamAlignment
+export -f process_MergeBamAlignment
 
 # Run the function in parallel for all *.bam files
-#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_SamToFastq_bwa_MergeBamAlignment
-ls *_markilluminaadapters.bam     | parallel -j 10 process_SamToFastq_bwa_MergeBamAlignment
+#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_MergeBamAlignment
+ls *_bwa_mem.sam     | parallel -j 10 process_MergeBamAlignment
 ```
 
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+  rm *_bwa_mem.sam
+  rm *_RevertSam.bam
+```
 
 ```{bash}
 conda activate GATK_env

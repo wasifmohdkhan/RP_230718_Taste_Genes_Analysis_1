@@ -1,0 +1,67 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{bash}
+conda activate GATK_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Vivianne_files/Fluidgm_CHRIM_80_2019_GATK
+
+rm -r     ./BQSR_dedup_bamqc/samtools_stats
+mkdir -p  ./BQSR_dedup_bamqc/samtools_stats
+
+
+rm -r     ./BQSR_dedup_bamqc/collect_wgs_metrics
+mkdir -p  ./BQSR_dedup_bamqc/collect_wgs_metrics
+
+process_stats() {
+  SAMPLE_NAME=$(basename "$1" | sed -E 's/.*\.(S[0-9]+_BQSR_dedup)_sample_final.bam/\1/')
+ 
+  samtools stats \
+    --target-regions /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
+    $1 > \
+    ./BQSR_dedup_bamqc/samtools_stats/${SAMPLE_NAME}_samtools.stats
+  
+    _JAVA_OPTIONS="-Xmx90g" picard CollectWgsMetrics \
+      I=$1 \
+      O=./BQSR_dedup_bamqc/collect_wgs_metrics/${SAMPLE_NAME}_collect_wgs_metrics.txt \
+      R=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+      INTERVALS=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236_bed.interval_list
+}
+
+export -f process_stats
+in_dir=/media/Second_stor/prashen/Vivianne/T2R_sequences/December_2021/Fluidgm_CHRIM_80_2019_GATK
+# Run the function in parallel for all *.bam files
+ls $in_dir/*_BQSR_dedup_sample_final.bam    | parallel -j 40 process_stats
+```
+
+
+```{bash}
+
+
+
+```
+
+
+```{bash}
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Vivianne_files/Fluidgm_CHRIM_80_2019_GATK/BQSR_dedup_bamqc
+
+/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+--interactive --force \
+./samtools_stats \
+-o ./samtools_stats
+
+/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+--interactive --force \
+./collect_wgs_metrics \
+-o ./collect_wgs_metrics
+```

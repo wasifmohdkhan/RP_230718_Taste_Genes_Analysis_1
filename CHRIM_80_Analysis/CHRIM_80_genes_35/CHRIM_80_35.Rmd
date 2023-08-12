@@ -191,7 +191,7 @@ mkdir -p ./Aligned_bamqc/collect_wgs_metrics
 process_stats_CollectWgsMetrics() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
   samtools stats \
-  --target-regions ../CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
+  --target-regions /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
   ${SAMPLE_NAME}_aligned.bam > \
   ./Aligned_bamqc/samtools_stats/${SAMPLE_NAME}_aligned_bam.stats
   
@@ -322,15 +322,35 @@ ls   *_marked_duplicates.bam                                | parallel -j 20 pro
 conda activate GATK_env
 
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-mkdir -p ./BQSR_dedup_bamqc/samtools_stats
-mkdir -p ./BQSR_dedup_bamqc/collect_wgs_metrics
+rm -r     ./BQSR_dedup_bamqc/samtools_stats
+mkdir -p  ./BQSR_dedup_bamqc/samtools_stats
 
-process_stats_CollectWgsMetrics() {
+process_stats() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_BQSR_dedup_sample_final.bam//')
+ 
   samtools stats \
-    --target-regions ../CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
+    --target-regions /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
     ${SAMPLE_NAME}_BQSR_dedup_sample_final.bam > \
-    ./BQSR_dedup_bamqc/samtools_stats/${SAMPLE_NAME}_aligned_bam.stats
+    ./BQSR_dedup_bamqc/samtools_stats/${SAMPLE_NAME}_samtools.stats
+  
+}
+
+export -f process_stats
+# Run the function in parallel for all *.bam files
+ls *_BQSR_dedup_sample_final.bam     | parallel -j 40 process_stats
+```
+
+
+```{bash}
+conda activate GATK_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+rm -r     ./BQSR_dedup_bamqc/collect_wgs_metrics
+mkdir -p  ./BQSR_dedup_bamqc/collect_wgs_metrics
+
+process_stats() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_BQSR_dedup_sample_final.bam//')
   
   _JAVA_OPTIONS="-Xmx90g" picard CollectWgsMetrics \
       I=${SAMPLE_NAME}_BQSR_dedup_sample_final.bam \
@@ -339,12 +359,25 @@ process_stats_CollectWgsMetrics() {
       INTERVALS=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236_bed.interval_list
 }
 
-export -f process_stats_CollectWgsMetrics
+export -f process_stats
 # Run the function in parallel for all *.bam files
-ls *_BQSR_dedup_sample_final.bam     | parallel -j 40 process_stats_CollectWgsMetrics
+ls *_BQSR_dedup_sample_final.bam     | parallel -j 40 process_stats
 ```
 
 
 ```{bash}
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/BQSR_dedup_bamqc
+
+/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+--interactive --force \
+./samtools_stats \
+-o ./samtools_stats
+
+/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+--interactive --force \
+./collect_wgs_metrics \
+-o ./collect_wgs_metrics
 ```
+
 
