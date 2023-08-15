@@ -1,0 +1,189 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+```{bash}
+mkdir -p /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+
+## path for replacement  
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile 
+# to 
+/media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile
+
+```
+
+```{bash}
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+# Activate conda environment
+conda activate GATK_env
+
+# Directory containing your fastq files
+FASTQ_DIR=/media/Second_stor/wasif/BuccalSwab384_samples_56_taste_genes_Nanuq_RAW_Seqs
+
+# Output directory
+OUT_DIR=/media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/
+
+cd $FASTQ_DIR
+
+# Set Java options
+export _JAVA_OPTIONS="-Xmx90g"
+
+# Function to process files
+process_files() {
+    R1=$1
+    R2=${R1/_R1.fastq.gz/_R2.fastq.gz}
+    SAMPLE_NAME=$(echo $R1 | sed -e 's/NS.2150.TSP[0-9]*---TSP200X.//' -e 's/_R1.fastq.gz//')
+    OUTPUT_name=/media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/${SAMPLE_NAME}_FastqToSam.bam
+    _JAVA_OPTIONS="-Xmx90g" picard FastqToSam \
+        FASTQ=$R1 \
+        FASTQ2=$R2 \
+        OUTPUT=$OUTPUT_name \
+        SAMPLE_NAME=${SAMPLE_NAME} \
+        READ_GROUP_NAME=BS384_NovoSeq6000 \
+        LIBRARY_NAME=Fluidigm \
+        PLATFORM=illumina
+}
+
+# Export the function so it can be used by parallel
+export -f process_files
+
+# Find R1 files and pass them to parallel
+find . -name "*R1.fastq.gz" | parallel -j 40 process_files
+# try with two files
+#echo -e "NS.2150.TSP0001---TSP200X.BS_006_R1.fastq.gz\nNS.2150.TSP0002---TSP200X.BS_008_R1.fastq.gz" | parallel -j $THREADS process_files
+
+## takes about 1.5 hour
+```
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+
+# 
+process_picard_MarkIlluminaAdapters() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_FastqToSam.bam//')
+  
+  _JAVA_OPTIONS="-Xmx90g" picard MarkIlluminaAdapters \
+    I=${SAMPLE_NAME}_FastqToSam.bam \
+    O=${SAMPLE_NAME}_markilluminaadapters.bam \
+    M=${SAMPLE_NAME}_markilluminaadapters_metrics.txt
+    
+
+}
+# Export the function so it can be used by parallel
+export -f process_picard_MarkIlluminaAdapters
+
+# pass them to parallel
+# try with one files
+#find . -name "*006_RevertSam.bam" | parallel -j $THREADS process_picard_MarkIlluminaAdapters # for one file
+find . -name "*_FastqToSam.bam"   | parallel -j 40 process_picard_MarkIlluminaAdapters
+
+```
+
+
+```{bash}
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+mkdir -p Fastqc_report
+mkdir -p Aligned_bamqc
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+
+# Function for processing each file
+process_SamToFastq_bwa() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_markilluminaadapters.bam//')
+  # Path to your reference genome
+  REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+
+  # Number of cores
+  THREADS=2
+  _JAVA_OPTIONS="-Xmx90g" picard SamToFastq \
+      I=$1 \
+      FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
+      CLIPPING_ATTRIBUTE=XT \
+      CLIPPING_ACTION=2 \
+      INTERLEAVE=true \
+      NON_PF=true
+  
+  /home/wasif_pclab/anaconda3/envs/fastqc/bin/fastqc \
+      ${SAMPLE_NAME}_samtofastq_interleaved.fq \
+      -o ./Fastqc_report
+  
+  bwa mem -M -t $THREADS \
+      -p ${REF} \
+      ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
+      ${SAMPLE_NAME}_bwa_mem.sam
+  
+  rm ${SAMPLE_NAME}_samtofastq_interleaved.fq
+}
+
+export -f process_SamToFastq_bwa
+
+# Run the function in parallel for all *.bam files
+#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_SamToFastq_bwa
+ls *_markilluminaadapters.bam     | parallel -j 20 process_SamToFastq_bwa
+```
+
+```{bash}
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+rm *_markilluminaadapters.bam
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+
+# Function for processing each file
+process_MergeBamAlignment() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_bwa_mem.sam//')
+  # Path to your reference genome
+  REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+
+  
+  _JAVA_OPTIONS="-Xmx90g" picard MergeBamAlignment \
+  ALIGNED_BAM=$1 \
+  UNMAPPED_BAM=${SAMPLE_NAME}_FastqToSam.bam \
+  OUTPUT=${SAMPLE_NAME}_aligned.bam \
+  REFERENCE_SEQUENCE=${REF} \
+  CREATE_INDEX=true \
+  ADD_MATE_CIGAR=true \
+  CLIP_ADAPTERS=false \
+  CLIP_OVERLAPPING_READS=true \
+  INCLUDE_SECONDARY_ALIGNMENTS=true \
+  MAX_INSERTIONS_OR_DELETIONS=-1 \
+  PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+  ATTRIBUTES_TO_RETAIN=XS
+}
+
+export -f process_MergeBamAlignment
+
+# Run the function in parallel for all *.bam files
+#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_MergeBamAlignment
+ls *_bwa_mem.sam     | parallel -j 10 process_MergeBamAlignment
+```
+

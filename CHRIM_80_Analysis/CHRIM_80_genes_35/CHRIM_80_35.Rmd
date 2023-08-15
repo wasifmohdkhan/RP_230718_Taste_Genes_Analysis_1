@@ -46,8 +46,8 @@ export -f process_picard_RevertSam
 # pass them to parallel
 in_dir=/media/Second_stor/prashen/Vivianne/T2R_sequences/raw_bam_new_May_2019
 # try with one files
-ls $in_dir/*S10.bam   | parallel -j 20 process_picard_RevertSam
-#ls $in_dir/*.bam | parallel -j 20 process_picard_RevertSam
+#ls $in_dir/*S10.bam   | parallel -j 20 process_picard_RevertSam
+ls $in_dir/*.bam | parallel -j 40 process_picard_RevertSam
 
 # takes about 30 minutes
 ```
@@ -94,36 +94,35 @@ process_SamToFastq_bwa_MergeBamAlignment() {
   # Number of cores
   THREADS=4
   _JAVA_OPTIONS="-Xmx90g" picard SamToFastq \
-  I=$1 \
-  FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
-  CLIPPING_ATTRIBUTE=XT \
-  CLIPPING_ACTION=2 \
-  INTERLEAVE=true \
-  NON_PF=true
+    I=$1 \
+    FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
+    CLIPPING_ATTRIBUTE=XT \
+    CLIPPING_ACTION=2 \
+    INTERLEAVE=true \
+    NON_PF=true
   
   /home/wasif_pclab/anaconda3/envs/fastqc/bin/fastqc \
-  ${SAMPLE_NAME}_samtofastq_interleaved.fq \
-  -o ./Fastqc_report
+    ${SAMPLE_NAME}_samtofastq_interleaved.fq \
+    -o ./Fastqc_report
   
   bwa mem -M -t $THREADS \
-  -p ${REF} \
-  ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
-  ${SAMPLE_NAME}_bwa_mem.sam
-  
+    -p ${REF} \
+    ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
+    ${SAMPLE_NAME}_bwa_mem.sam
   
   _JAVA_OPTIONS="-Xmx90g" picard MergeBamAlignment \
-  ALIGNED_BAM=${SAMPLE_NAME}_bwa_mem.sam \
-  UNMAPPED_BAM=${SAMPLE_NAME}_RevertSam.bam \
-  OUTPUT=${SAMPLE_NAME}_aligned.bam \
-  REFERENCE_SEQUENCE=${REF} \
-  CREATE_INDEX=true \
-  ADD_MATE_CIGAR=true \
-  CLIP_ADAPTERS=false \
-  CLIP_OVERLAPPING_READS=true \
-  INCLUDE_SECONDARY_ALIGNMENTS=true \
-  MAX_INSERTIONS_OR_DELETIONS=-1 \
-  PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
-  ATTRIBUTES_TO_RETAIN=XS
+    ALIGNED_BAM=${SAMPLE_NAME}_bwa_mem.sam \
+    UNMAPPED_BAM=${SAMPLE_NAME}_RevertSam.bam \
+    OUTPUT=${SAMPLE_NAME}_aligned.bam \
+    REFERENCE_SEQUENCE=${REF} \
+    CREATE_INDEX=true \
+    ADD_MATE_CIGAR=true \
+    CLIP_ADAPTERS=false \
+    CLIP_OVERLAPPING_READS=true \
+    INCLUDE_SECONDARY_ALIGNMENTS=true \
+    MAX_INSERTIONS_OR_DELETIONS=-1 \
+    PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+    ATTRIBUTES_TO_RETAIN=XS
   
   rm ${SAMPLE_NAME}_samtofastq_interleaved.fq
   rm ${SAMPLE_NAME}_bwa_mem.sam
@@ -168,7 +167,6 @@ cp /media/Second_stor/prashen/Vivianne/T2R_sequences/Taste_Genes_38_BEDfile.bed 
 /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed
 ```
 
-
 ## create an interval file from bed to be used in picard_CollectWgsMetrics
 
 ```{bash}
@@ -204,7 +202,7 @@ process_stats_CollectWgsMetrics() {
 
 export -f process_stats_CollectWgsMetrics
 # Run the function in parallel for all *.bam files
-ls *_aligned.bam     | parallel -j 40 process_stats_CollectWgsMetrics
+ls *_aligned.bam     | parallel -j 10 process_stats_CollectWgsMetrics
 
 
 ```
@@ -254,30 +252,29 @@ ls *_aligned.bam  | parallel -j 20 process_picard_SortSam
 
 
 ```{bash}
-#Mark duplicates
-conda activate GATK_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+<!-- #Mark duplicates -->
+<!-- conda activate GATK_env -->
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK -->
 
-# Function for processing each file
-process_MarkDuplicates() {
-  file=$1
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
-    _JAVA_OPTIONS="-Xmx80g" picard MarkDuplicates \
-    INPUT=${SAMPLE_NAME}_sorted.bam \
-    OUTPUT=${SAMPLE_NAME}_marked_duplicates.bam \
-    M=${SAMPLE_NAME}_marked_dup_metrics.txt
-}
-export -f process_MarkDuplicates
+<!-- # Function for processing each file -->
+<!-- process_MarkDuplicates() { -->
+<!--   file=$1 -->
+<!--   SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//') -->
+<!--     _JAVA_OPTIONS="-Xmx80g" picard MarkDuplicates \ -->
+<!--     INPUT=${SAMPLE_NAME}_sorted.bam \ -->
+<!--     OUTPUT=${SAMPLE_NAME}_marked_duplicates.bam \ -->
+<!--     M=${SAMPLE_NAME}_marked_dup_metrics.txt -->
+<!-- } -->
+<!-- export -f process_MarkDuplicates -->
 
-# Run the function in parallel for all *.bam files
-#ls *006_aligned.bam  | parallel -j 40 process_MarkDuplicates
-ls   *_sorted.bam   | parallel -j 2 process_MarkDuplicates # use with one thread only this uses about 35 cores and 25gb of RAM when peaked
+<!-- # Run the function in parallel for all *.bam files -->
+<!-- #ls *006_aligned.bam  | parallel -j 40 process_MarkDuplicates -->
+<!-- ls   *_sorted.bam   | parallel -j 2 process_MarkDuplicates # use with one thread only this uses about 35 cores and 25gb of RAM when peaked -->
 ```
 
 ## if everything looks good then previous files can be deleted
 ```{bash}
  cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-  rm *_sorted.bam
   rm *_aligned.bam
   rm *_aligned.bai
 ```
@@ -292,52 +289,28 @@ conda activate GATK_env
 # Function for processing each file
 process_gatk_BaseRecalibrator() {
   #file=$1
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_marked_duplicates.bam//')
-  
+  SAMPLE_NAME=$(echo $1 | sed -e 's/*_sorted.bam//')
+
   ref_file=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
   _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
   -R $ref_file \
   -I $1 \
   --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
   --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
-  -O ${SAMPLE_NAME}_recal_data_sample.table
-  
+  -O ${SAMPLE_NAME}_sorted_recal_data.table
+
   _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
   -R $ref_file \
   -I $1 \
-  --bqsr-recal-file ${SAMPLE_NAME}_recal_data_sample.table \
-  -O ${SAMPLE_NAME}_BQSR_dedup_sample_final.bam
+  --bqsr-recal-file ${SAMPLE_NAME}_sorted_recal_data.table \
+  -O ${SAMPLE_NAME}_sorted_BQSR.bam
 }
 
 export -f process_gatk_BaseRecalibrator
 
 # Run the function in parallel for all *.bam files
 #ls *006_marked_duplicates.bam *008_marked_duplicates.bam  | parallel -j 2 process_gatk_BaseRecalibrator
-ls   *_marked_duplicates.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
-```
-
-
-
-```{bash}
-conda activate GATK_env
-
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-rm -r     ./BQSR_dedup_bamqc/samtools_stats
-mkdir -p  ./BQSR_dedup_bamqc/samtools_stats
-
-process_stats() {
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_BQSR_dedup_sample_final.bam//')
- 
-  samtools stats \
-    --target-regions /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed \
-    ${SAMPLE_NAME}_BQSR_dedup_sample_final.bam > \
-    ./BQSR_dedup_bamqc/samtools_stats/${SAMPLE_NAME}_samtools.stats
-  
-}
-
-export -f process_stats
-# Run the function in parallel for all *.bam files
-ls *_BQSR_dedup_sample_final.bam     | parallel -j 40 process_stats
+ls   *_sorted.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
 ```
 
 

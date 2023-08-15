@@ -26,7 +26,7 @@ conda install -c bioconda picard
 #dbSNP files: one is from https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/
 # the other is from GATK 
 ```{bash}
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38
 # human genome reference
 wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 gunzip GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
@@ -39,6 +39,11 @@ rm GCA_000001405.15_GRCh38_full_analysis_set.fna.bwa_index.tar.gz
 # hg38 index file
 wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.fai
 #wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz
+
+```
+
+
+```{bash}
 
 ```
 
@@ -58,8 +63,8 @@ REFERENCE=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1
 # Number of threads
 THREADS=45
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/GATK_pipepile
-#bwa index -a bwtsw ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/GATK_pipepile
+#bwa index -a bwtsw /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
 cd $FASTQ_DIR
 #for R1 in NS.2150.TSP*---TSP200X.BS*_R1_trimmed.fq.gz
@@ -114,13 +119,13 @@ by picard tool.
 For this, I need to created bam file from fastq to clean the reads as given here
 https://gatk.broadinstitute.org/hc/en-us/articles/4403687183515--How-to-Generate-an-unmapped-BAM-from-FASTQ-or-aligned-BAM
 ```{bash}
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384
 mkdir FastqToGVCF
 ```
 
 
 ```{bash}
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 # Activate conda environment
 conda activate GATK_env
 
@@ -170,7 +175,7 @@ find . -name "*R1.fastq.gz" | parallel -j $THREADS process_files
 # Activate conda environment
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 
 # Number of threads
 THREADS=45
@@ -216,7 +221,7 @@ find . -name "*_FastqToSam.bam"     | parallel -j $THREADS process_picard_Revert
 # Activate conda environment
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 
 # Number of threads
 THREADS=45
@@ -259,7 +264,7 @@ picard CreateSequenceDictionary \
 # Activate conda environment
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 
 # Function for processing each file
 process_SamToFastq_bwa_MergeBamAlignment() {
@@ -267,7 +272,7 @@ process_SamToFastq_bwa_MergeBamAlignment() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_markilluminaadapters.bam//')
   # Path to your reference genome
   REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
-  TMP=~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384
+  TMP=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384
   # Number of cores
   THREADS=4
   _JAVA_OPTIONS="-Xmx90g" picard SamToFastq \
@@ -306,23 +311,6 @@ export -f process_SamToFastq_bwa_MergeBamAlignment
 #ls *006_markilluminaadapters.bam  | parallel -j $THREADS process_SamToFastq_bwa_MergeBamAlignment
 #ls *_markilluminaadapters.bam     | parallel -j 10 process_SamToFastq_bwa_MergeBamAlignment
 
-# Find all .bam files
-bam_files=(*_markilluminaadapters.bam)
-
-# Process only those files for which .bai file is missing
-for bam_file in "${bam_files[@]}"; do
-  SAMPLE_NAME=$(echo $bam_file | sed -e 's/_markilluminaadapters.bam//')
-  bai_file="${SAMPLE_NAME}_aligned.bai"
-  if [[ ! -f "$bai_file" ]]; then
-    # Run the function in background (& at the end of command)
-    process_SamToFastq_bwa_MergeBamAlignment "$bam_file" &
-    # Ensure that we do not spawn too many processes
-    while (( $(jobs | wc -l) >= 10 )); do
-      # If we have too many jobs, wait before starting new one
-      sleep 1
-    done
-  fi
-done
 ```
 
 Since the intermediate files are occupying a lot of space we need to delete them
@@ -330,7 +318,7 @@ but do Qualimap and multiqc before deleting them
 
 ```{bash}
 conda activate GATK_env
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 
 # make a new directory to save the qualimap files
 aligned_bam_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/MultiQC_Results/aligned_bam
@@ -367,7 +355,7 @@ the subsequent steps
 # Wait for all background jobs to finish
 wait
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 ## remove the input files to save the space
 rm *_FastqToSam.bam
 rm *_RevertSam.bam
@@ -381,7 +369,7 @@ rm *_markilluminaadapters_metrics.txt
 # Activate conda environment
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 
 # Function for processing each file
 process_MarkDuplicates() {
@@ -404,7 +392,7 @@ ls   *_aligned.bam   | parallel -j 2 process_MarkDuplicates # use with one threa
 
 ```{bash}
 conda activate qualimap_env
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF 
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF 
 
 # make a new directory to save the qualimap files
 marked_duplicates_bam_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/MultiQC_Results/marked_duplicates_bam
@@ -433,7 +421,7 @@ multiqc \
 ```
 
 ```{bash}
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF 
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF 
 rm *_aligned.bam
 rm *_aligned.bai
 ```
@@ -469,7 +457,7 @@ gatk IndexFeatureFile -F /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_G
 # Activate conda environment
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
 
 # Function for processing each file
 process_gatk_BaseRecalibrator() {
@@ -502,8 +490,8 @@ ls   *_marked_duplicates.bam                                | parallel -j 20 pro
 # Activate conda environment
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
-mkdir ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+mkdir /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 # Function for processing each file
 process_gatk_HaplotypeCaller() {
   #file=$1
@@ -528,14 +516,14 @@ ls    *_BQSR_dedup_sample_final.bam                                   | parallel
 
 
 ```{bash}
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 for i in *.vcf.gz; do echo `bcftools query -l $i`;echo $i;done | paste - - >  ./Samples384.map
 ```
 
 ```{bash}
 <!-- conda activate GATK_env -->
 
-<!-- cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
 
 <!-- gatk GenomicsDBImport \ -->
 <!-- --sample-name-map ./Combined384_samples.map \ -->
@@ -555,7 +543,7 @@ for i in *.vcf.gz; do echo `bcftools query -l $i`;echo $i;done | paste - - >  ./
 ```{bash}
 conda activate GATK_env
 
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 ref_file=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
 # Start the CombineGVCFs command
 cmd='_JAVA_OPTIONS="-Xmx90g" gatk CombineGVCFs -R ${ref_file} '
@@ -576,7 +564,7 @@ eval $cmd
 
 ```{bash}
 #to see the sample names and sample counts in the combined vcf file
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 grep '^#CHROM' Samples384_Combined.g.vcf | cut -f10- 
 grep '^#CHROM' Samples384_Combined.g.vcf | cut -f10- | tr '\t' '\n' | wc -l
 # 
@@ -587,7 +575,7 @@ grep -v '^#' Samples384_Combined.g.vcf | wc -l
 ```{bash}
 conda activate GATK_env
 
-cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 
 _JAVA_OPTIONS="-Xmx90g" gatk GenotypeGVCFs \
 -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
@@ -596,7 +584,7 @@ _JAVA_OPTIONS="-Xmx90g" gatk GenotypeGVCFs \
 ```
 
 ```{bash}
-cd ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 echo "sample numbers"
 grep '^#CHROM' Samples384_Combined.g.vcf | cut -f10- | tr '\t' '\n' | wc -l
 echo "chromosomes in the vcf file"
@@ -624,7 +612,7 @@ wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0
 ```{bash}
 <!-- conda activate GATK_env -->
 
-<!-- cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
+<!-- cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
 
 <!-- ref_folder=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs -->
 <!--  _JAVA_OPTIONS="-Xmx90g" gatk VariantRecalibrator \ -->
@@ -649,7 +637,7 @@ If you're using a small number of samples or limited annotations, there may not 
 
 ```{bash}
 <!-- conda activate GATK_env -->
-<!-- cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
+<!-- cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
 <!-- ref_folder=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs -->
 
 <!--  _JAVA_OPTIONS="-Xmx90g" gatk ApplyVQSR \ -->
@@ -668,7 +656,7 @@ If you're using a small number of samples or limited annotations, there may not 
 ## Now we need to do the hard filtering
 ```{bash}
 <!-- conda activate GATK_env -->
-<!-- cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
+<!-- cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF -->
 <!-- ref=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna -->
 
 <!-- _JAVA_OPTIONS="-Xmx90g" gatk VariantFiltration \ -->
@@ -688,7 +676,7 @@ If you're using a small number of samples or limited annotations, there may not 
 As We do not have metadata for these samples
 
 ```{bash}
-cd  ~/media_Second_stor_wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
+cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/VCF
 # ./BS_106,./BS_Chrim_25,./BS_Chrim_59,./BS_Chrim_77,./BS_Chrim_79
 bcftools view \
 -s ^./BS_103,./BS_Chrim_25,./BS_Chrim_59,./BS_Chrim_77,./BS_Chrim_79 \
