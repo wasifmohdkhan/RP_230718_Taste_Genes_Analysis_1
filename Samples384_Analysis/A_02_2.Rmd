@@ -34,13 +34,9 @@ cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS38
 # Activate conda environment
 conda activate GATK_env
 
+
 # Directory containing your fastq files
-FASTQ_DIR=/media/Second_stor/wasif/BuccalSwab384_samples_56_taste_genes_Nanuq_RAW_Seqs
-
-# Output directory
-OUT_DIR=/media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF/
-
-cd $FASTQ_DIR
+cd /media/Second_stor/wasif/BuccalSwab384_samples_56_taste_genes_Nanuq_RAW_Seqs
 
 # Set Java options
 export _JAVA_OPTIONS="-Xmx90g"

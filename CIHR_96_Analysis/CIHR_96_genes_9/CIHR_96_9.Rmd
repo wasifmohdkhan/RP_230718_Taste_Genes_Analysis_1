@@ -1,0 +1,149 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+This analysis will be done in another computer (BMG_SBG_308). Hence the path will be different. The final bam will be copied using
+SCP transter to this computer (PC_lab).
+
+```{bash}
+cp -r /media/Second_stor/prashen/Vivianne/T2R_sequences/November_2020/raw_November_2020 /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/Raw_data/
+cp -r /media/Second_stor/wasif/BuccalSwab384_samples_56_taste_genes_Nanuq_RAW_Seqs /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/Raw_data/
+
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+
+# make a new dir to store GATK output files
+mkdir -p  /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+# Directory containing your fastq files
+cd /home/mwkhan/Taste_Genes_Analysis/Raw_data/raw_November_2020
+
+
+# Function to process files
+process_files() {
+    R1=$1
+    R2=${R1/_R1.fastq.gz/_R2.fastq.gz}
+    SAMPLE_NAME=$(echo $R1 | sed -e 's/NS.1414.002.TSP[0-9]*.B//' -e 's/_R1.fastq.gz//')
+    OUTPUT_name=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK/${SAMPLE_NAME}_FastqToSam.bam
+    
+    _JAVA_OPTIONS="-Xmx90g" picard FastqToSam \
+        FASTQ=$R1 \
+        FASTQ2=$R2 \
+        OUTPUT=$OUTPUT_name \
+        SAMPLE_NAME=${SAMPLE_NAME} \
+        READ_GROUP_NAME=CIHR_96_9 \
+        LIBRARY_NAME=Fluidigm \
+        PLATFORM=illumina \
+        TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
+}
+
+# Export the function so it can be used by parallel
+export -f process_files
+
+# Find R1 files and pass them to parallel
+ls *_R1.fastq.gz | parallel -j 10 process_files
+
+```
+
+```{bash}
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+mkdir -p Fastqc_report
+mkdir -p aligned_bamqc
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+process_picard_MarkIlluminaAdapters() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_FastqToSam.bam//')
+  _JAVA_OPTIONS="-Xmx90g" picard MarkIlluminaAdapters \
+    I=${SAMPLE_NAME}_FastqToSam.bam \
+    O=${SAMPLE_NAME}_markilluminaadapters.bam \
+    M=${SAMPLE_NAME}_markilluminaadapters_metrics.txt \
+    TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
+}
+# Export the function so it can be used by parallel
+export -f process_picard_MarkIlluminaAdapters
+
+
+#find . -name "*S1_RevertSam.bam" | parallel -j 40 process_picard_MarkIlluminaAdapters # for one file
+find . -name "*_FastqToSam.bam"   | parallel -j 40 process_picard_MarkIlluminaAdapters
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+# Function for processing each file
+process_SamToFastq_bwa() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_markilluminaadapters.bam//')
+  # Path to your reference genome
+  REF="/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+
+  # Number of cores
+  THREADS=2
+  _JAVA_OPTIONS="-Xmx90g" picard SamToFastq \
+      I=$1 \
+      FASTQ=${SAMPLE_NAME}_samtofastq_interleaved.fq \
+      CLIPPING_ATTRIBUTE=XT \
+      CLIPPING_ACTION=2 \
+      INTERLEAVE=true \
+      NON_PF=true \
+      TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
+  
+  /home/mwkhan/anaconda3/envs/fastqc/bin/fastqc \
+      ${SAMPLE_NAME}_samtofastq_interleaved.fq \
+      -o ./Fastqc_report
+  
+  bwa mem -M -t $THREADS \
+      -p ${REF} \
+      ${SAMPLE_NAME}_samtofastq_interleaved.fq > \
+      ${SAMPLE_NAME}_bwa_mem.sam
+  
+  rm ${SAMPLE_NAME}_samtofastq_interleaved.fq
+}
+
+export -f process_SamToFastq_bwa
+
+# Run the function in parallel for all *.bam files
+#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_SamToFastq_bwa
+ls *_markilluminaadapters.bam     | parallel -j 20 process_SamToFastq_bwa
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

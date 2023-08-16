@@ -69,28 +69,9 @@ ls $in_dir/*.bam     | parallel -j 10 process_picard_RevertSam
 ```{bash}
 cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
 mkdir -p Fastqc_report
-mkdir -p Aligned_bamqc
+mkdir -p aligned_bamqc
 ```
 
-
-```{bash}
-<!-- # Activate conda environment -->
-<!-- conda activate GATK_env -->
-<!-- cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK -->
-
-<!-- process_fastqc() { -->
-<!--   SAMPLE_NAME=$(echo $1 | sed -e 's/_RevertSam.bam//') -->
-<!--   /home/mwkhan/anaconda3/envs/fastqc/bin/fastqc \ -->
-<!--   ${SAMPLE_NAME}_RevertSam.bam \ -->
-<!--   -o ./Fastqc_report -->
-<!-- } -->
-<!-- # Export the function so it can be used by parallel -->
-<!-- export -f process_fastqc -->
-
-
-<!-- #find . -name "*S1_RevertSam.bam" | parallel -j 40 process_fastqc # for one file -->
-<!-- find . -name "*_RevertSam.bam"   | parallel -j 40 process_fastqc -->
-```
 
 ```{bash}
 # Activate conda environment
@@ -222,64 +203,40 @@ rm ./Fastqc_report/*_samtofastq_interleaved_fastqc.html
 
 ```{bash}
 mkdir /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles
-# copy to the working directory
-cp /media/Second_stor/prashen/Vivianne/T2R_sequences/December_2021/New_hg38_Project_293.bed \
-/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed
-```
-
-
-## create an interval file from bed to be used in picard_CollectWgsMetrics
-
-```{bash}
-conda activate GATK_env
-picard BedToIntervalList \
-      I=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed \
-      O=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed.interval_list \
-      SD=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.dict
+# copy appropriate bed fileto the working directory
+# New_hg38_Project_373.bed
+<!-- cp /media/Second_stor/prashen/Vivianne/T2R_sequences/December_2021/New_hg38_Project_293.bed \ -->
+<!-- /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed -->
 ```
 
 ```{bash}
-conda activate GATK_env
-
 cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
-rm -r    ./Aligned_bamqc/samtools_stats
-mkdir -p ./Aligned_bamqc/samtools_stats
-
-process_stats() {
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
-  samtools stats \
-  --target-regions /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed \
-  ${SAMPLE_NAME}_aligned.bam > \
-  ./Aligned_bamqc/samtools_stats/${SAMPLE_NAME}_aligned_bam.stats
-}
-
-export -f process_stats
-# Run the function in parallel for all *.bam files
-ls *_aligned.bam     | parallel -j 40 process_stats
+  rm *_markilluminaadapters.bam
+  rm *_markilluminaadapters_metrics.txt
 ```
 
 ```{bash}
-
-conda activate GATK_env
+conda activate qualimap_env
 
 cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
 
-rm -r    ./Aligned_bamqc/collect_wgs_metrics
-mkdir -p ./Aligned_bamqc/collect_wgs_metrics
+rm -r    ./Aligned_bamqc/Qualimap
+mkdir -p ./Aligned_bamqc/Qualimap
 
-process_CollectWgsMetrics() {
+process_Qualimap() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
-
-    _JAVA_OPTIONS="-Xmx90g" picard CollectWgsMetrics \
-  I=${SAMPLE_NAME}_aligned.bam \
-  O=./Aligned_bamqc/collect_wgs_metrics/${SAMPLE_NAME}_collect_wgs_metrics.txt \
-  R=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
-  INTERVALS=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed.interval_list
+  
+    _JAVA_OPTIONS="-Xmx90g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_aligned.bam \
+      -outdir ./Aligned_bamqc/Qualimap/${SAMPLE_NAME}_aligned_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/New_hg38_Project_373_no_names.bed
 }
 
-export -f process_CollectWgsMetrics
+export -f process_Qualimap
 # Run the function in parallel for all *.bam files
-ls *_aligned.bam     | parallel -j 20 process_CollectWgsMetrics
+ls *_aligned.bam     | parallel -j 5 process_Qualimap
 
 ```
 
@@ -288,21 +245,11 @@ ls *_aligned.bam     | parallel -j 20 process_CollectWgsMetrics
 conda activate GATK_env
 cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
 
-/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
 --interactive --force \
-./Aligned_bamqc/samtools_stats \
--o ./Aligned_bamqc/samtools_stats
+./Aligned_bamqc/Qualimap \
+-o ./Aligned_bamqc/Qualimap
 
-/home/wasif_pclab/anaconda3/envs/multiqc/bin/multiqc \
---interactive --force \
-./Aligned_bamqc/collect_wgs_metrics \
--o ./Aligned_bamqc/collect_wgs_metrics
-```
-
-```{bash}
-cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
-  rm *_markilluminaadapters.bam
-  rm *_markilluminaadapters_metrics.txt
 ```
 
 
@@ -323,7 +270,7 @@ process_picard_SortSam() {
 export -f process_picard_SortSam
 
 # Run the function in parallel for all *.bam files
-ls *_aligned.bam  | parallel -j 20 process_picard_SortSam
+ls *_aligned.bam  | parallel -j 10 process_picard_SortSam
 ```
 
 ## if everything looks good then previous files can be deleted
@@ -334,31 +281,28 @@ ls *_aligned.bam  | parallel -j 20 process_picard_SortSam
 ```
 
 ```{bash}
-#Mark duplicates
-conda activate GATK_env
-cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+<!-- #Mark duplicates -->
+<!-- conda activate GATK_env -->
+<!-- cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK -->
 
-# Function for processing each file
-process_MarkDuplicates() {
-  file=$1
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
-    _JAVA_OPTIONS="-Xmx80g" picard MarkDuplicates \
-    INPUT=${SAMPLE_NAME}_sorted.bam \
-    OUTPUT=${SAMPLE_NAME}_marked_duplicates.bam \
-    M=${SAMPLE_NAME}_marked_dup_metrics.txt
-}
-export -f process_MarkDuplicates
+<!-- # Function for processing each file -->
+<!-- process_MarkDuplicates() { -->
+<!--   file=$1 -->
+<!--   SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//') -->
+<!--     _JAVA_OPTIONS="-Xmx80g" picard MarkDuplicates \ -->
+<!--     INPUT=${SAMPLE_NAME}_sorted.bam \ -->
+<!--     OUTPUT=${SAMPLE_NAME}_marked_duplicates.bam \ -->
+<!--     M=${SAMPLE_NAME}_marked_dup_metrics.txt -->
+<!-- } -->
+<!-- export -f process_MarkDuplicates -->
 
-# Run the function in parallel for all *.bam files
-#ls *006_aligned.bam  | parallel -j 40 process_MarkDuplicates
-ls   *_sorted.bam   | parallel -j 3 process_MarkDuplicates # use with one thread only this uses about 34 cores and 25gb of RAM when peaked
+<!-- # Run the function in parallel for all *.bam files -->
+<!-- #ls *006_aligned.bam  | parallel -j 40 process_MarkDuplicates -->
+<!-- ls   *_sorted.bam   | parallel -j 3 process_MarkDuplicates # use with one thread only this uses about 34 cores and 25gb of RAM when peaked -->
 ```
 
-## if everything looks good then previous files can be deleted
-```{bash}
- cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
-  rm *_sorted.bam
-```
+
+
 
 ```{bash}
 # Activate conda environment
@@ -368,35 +312,33 @@ conda activate GATK_env
 
 # Function for processing each file
 process_gatk_BaseRecalibrator() {
-  #file=$1
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_marked_duplicates.bam//')
-  
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/*_sorted.bam//')
+
   ref_file=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
   _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
   -R $ref_file \
   -I $1 \
   --known-sites /home/mwkhan/Taste_Genes_Analysis/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
   --known-sites /home/mwkhan/Taste_Genes_Analysis/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
-  -O ${SAMPLE_NAME}_recal_data_sample.table
-  
+  -O ${SAMPLE_NAME}_sorted_recal_data.table
+
   _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
   -R $ref_file \
   -I $1 \
-  --bqsr-recal-file ${SAMPLE_NAME}_recal_data_sample.table \
-  -O ${SAMPLE_NAME}_BQSR_dedup_sample_final.bam
+  --bqsr-recal-file ${SAMPLE_NAME}_sorted_recal_data.table \
+  -O ${SAMPLE_NAME}_sorted_BQSR.bam
 }
 
 export -f process_gatk_BaseRecalibrator
 
 # Run the function in parallel for all *.bam files
 #ls *006_marked_duplicates.bam *008_marked_duplicates.bam  | parallel -j 2 process_gatk_BaseRecalibrator
-ls   *_marked_duplicates.bam                                | parallel -j 30 process_gatk_BaseRecalibrator
+ls   *_sorted.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
 ```
 
 ## if everything looks good then previous files can be deleted
 ```{bash}
  cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
-  rm *_marked_duplicates.bam
-  rm *_marked_dup_metrics.txt
-  rm *_recal_data_sample.table
+  rm *_sorted_recal_data.table
 ```
