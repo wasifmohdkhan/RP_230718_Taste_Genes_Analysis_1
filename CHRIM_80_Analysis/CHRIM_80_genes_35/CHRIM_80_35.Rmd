@@ -256,45 +256,83 @@ ls *_aligned.bam  | parallel -j 20 process_picard_SortSam
   rm *_aligned.bai
 ```
 
+```{bash}
+conda activate qualimap_env
+unset DISPLAY
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+rm -r    ./sorted_bamqc/Qualimap
+mkdir -p ./sorted_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted.bam \
+      -outdir ./sorted_bamqc/Qualimap/${SAMPLE_NAME}_sorted_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_bedfiles/CHRIM_80_35_genes_236.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted.bam     | parallel -j 5 process_Qualimap
+
+## MultiQC
+/home/wasif_pclab/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_bamqc/Qualimap \
+-o ./sorted_bamqc/Qualimap
+```
+
+## sorted bam files are copied to VERBATIM_HD_PC as back up.
+## Use these sam files from VERBATIM_HD_PC to generate sorted_BQSR files in the computer 
 
 ```{bash}
 # Activate conda environment
 conda activate GATK_env
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/Samples550_sorted_sam_backup/Samples80_genes35_sorted_sam
 
- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
+rm -r     ${out_dir}
+mkdir -p  ${out_dir}
 
 # Function for processing each file
 process_gatk_BaseRecalibrator() {
 
-  SAMPLE_NAME=$(echo $1 | sed -e 's/*_sorted.bam//')
-
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  
+  out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
+  
   ref_file=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
+  
   _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
-  -R $ref_file \
-  -I $1 \
-  --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
-  --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
-  -O ${SAMPLE_NAME}_sorted_recal_data.table
+      -R $ref_file \
+      -I $1 \
+      --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
+      --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
+      -O ${out_dir}/${SAMPLE_NAME}_sorted_recal_data.table
 
   _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
-  -R $ref_file \
-  -I $1 \
-  --bqsr-recal-file ${SAMPLE_NAME}_sorted_recal_data.table \
-  -O ${SAMPLE_NAME}_sorted_BQSR.bam
+      -R $ref_file \
+      -I $1 \
+      --bqsr-recal-file ${out_dir}/${SAMPLE_NAME}_sorted_recal_data.table \
+      -O ${out_dir}/${SAMPLE_NAME}_sorted_BQSR.bam
 }
 
 export -f process_gatk_BaseRecalibrator
 
-# Run the function in parallel for all *.bam files
-#ls *006_marked_duplicates.bam *008_marked_duplicates.bam  | parallel -j 2 process_gatk_BaseRecalibrator
-ls   *_sorted.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
+ls   *_sorted.bam                                | parallel -j 10 process_gatk_BaseRecalibrator
 ```
 
 
 
 ```{bash}
 conda activate qualimap_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+unset DISPLAY
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
 
 rm -r    ./sorted_BQSR_bamqc/Qualimap
 mkdir -p ./sorted_BQSR_bamqc/Qualimap
@@ -302,7 +340,7 @@ mkdir -p ./sorted_BQSR_bamqc/Qualimap
 process_Qualimap() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR.bam//')
   
-    _JAVA_OPTIONS="-Xmx90g" qualimap bamqc \
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
       -nt 1 \
       -bam ${SAMPLE_NAME}_sorted_BQSR.bam \
       -outdir ./sorted_BQSR_bamqc/Qualimap/${SAMPLE_NAME}_sorted_BQSR_qualimap \
@@ -312,19 +350,20 @@ process_Qualimap() {
 
 export -f process_Qualimap
 # Run the function in parallel for all *.bam files
-ls *_sorted_BQSR.bam     | parallel -j 5 process_Qualimap
+ls *_sorted_BQSR.bam     | parallel -j 8 process_Qualimap
 
 ## MultiQC
-/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+/home/wasif_pclab/anaconda3/envs/Multiqc_env/bin/multiqc \
 --interactive --force \
 ./sorted_BQSR_bamqc/Qualimap \
 -o ./sorted_BQSR_bamqc/Qualimap
 ```
 
+## to save space, these files are backed up in VERBATIM_HD_PC
 
-
-## if everything looks good then previous files can be deleted
 ```{bash}
- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
-  rm *_sorted_recal_data.table
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+rm *_sorted.bam
 ```
+
+

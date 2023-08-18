@@ -127,18 +127,197 @@ ls *_markilluminaadapters.bam     | parallel -j 20 process_SamToFastq_bwa
 ```
 
 
+```{bash}
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./Fastqc_report \
+-o ./Fastqc_report
+```
+
+```{bash}
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+rm *_markilluminaadapters.bam
+rm *_markilluminaadapters_metrics.txt
+```
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+# Function for processing each file
+process_MergeBamAlignment() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_bwa_mem.sam//')
+  # Path to your reference genome
+  REF="/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+
+  
+  _JAVA_OPTIONS="-Xmx90g" picard MergeBamAlignment \
+  ALIGNED_BAM=$1 \
+  UNMAPPED_BAM=${SAMPLE_NAME}_FastqToSam.bam \
+  OUTPUT=${SAMPLE_NAME}_aligned.bam \
+  REFERENCE_SEQUENCE=${REF} \
+  CREATE_INDEX=true \
+  ADD_MATE_CIGAR=true \
+  CLIP_ADAPTERS=false \
+  CLIP_OVERLAPPING_READS=true \
+  INCLUDE_SECONDARY_ALIGNMENTS=true \
+  MAX_INSERTIONS_OR_DELETIONS=-1 \
+  PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+  ATTRIBUTES_TO_RETAIN=XS \
+  TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
+}
+
+export -f process_MergeBamAlignment
+
+ls *_bwa_mem.sam     | parallel -j 10 process_MergeBamAlignment
+```
+
+
+```{bash}
+mkdir /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_bedfiles
+# copy appropriate bed fileto the working directory
+# New_hg38_Project_373.bed
+copy /media/Second_stor/prashen/Vivianne/T2R_sequences/November_2020/Bed153Fluidigm.bed \
+/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_bedfiles/CIHR_96_9_genes_153.bed
+```
+
+
+```{bash}
+<!-- conda activate qualimap_env -->
+
+<!-- cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK -->
+
+<!-- rm -r    ./aligned_bamqc/Qualimap -->
+<!-- mkdir -p ./aligned_bamqc/Qualimap -->
+
+<!-- process_Qualimap() { -->
+<!--   SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//') -->
+
+<!--     _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \ -->
+<!--       -nt 1 \ -->
+<!--       -bam ${SAMPLE_NAME}_aligned.bam \ -->
+<!--       -outdir ./aligned_bamqc/Qualimap/${SAMPLE_NAME}_aligned_qualimap \ -->
+<!--       --genome-gc-distr hg19 \ -->
+<!--       --feature-file /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_bedfiles/CIHR_96_9_genes_153_hg38.bed -->
+<!-- } -->
+
+<!-- export -f process_Qualimap -->
+<!-- # Run the function in parallel for all *.bam files -->
+<!-- ls *_aligned.bam     | parallel -j 5 process_Qualimap -->
 
 
 
+<!-- cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK -->
+
+<!-- /home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \ -->
+<!-- --interactive --force \ -->
+<!-- ./aligned_bamqc/Qualimap \ -->
+<!-- -o ./aligned_bamqc/Qualimap -->
+```
+
+
+```{bash}
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+# Function for processing each file
+process_picard_SortSam() {
+  file=$1
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
+  
+  _JAVA_OPTIONS="-Xmx80g" picard SortSam \
+      I=${SAMPLE_NAME}_aligned.bam \
+      O=${SAMPLE_NAME}_sorted.bam \
+      SORT_ORDER=coordinate \
+  TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
+}
+export -f process_picard_SortSam
+
+# Run the function in parallel for all *.bam files
+ls *_aligned.bam  | parallel -j 10 process_picard_SortSam
+```
+
+
+```{bash}
+conda activate qualimap_env
+
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+rm -r    ./sorted_bamqc/Qualimap
+mkdir -p ./sorted_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted.bam \
+      -outdir ./sorted_bamqc/Qualimap/${SAMPLE_NAME}_sorted_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_bedfiles/CIHR_96_9_genes_153_hg38.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted.bam     | parallel -j 5 process_Qualimap
 
 
 
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_bamqc/Qualimap \
+-o ./sorted_bamqc/Qualimap
+```
 
 
+## if everything looks good then previous files can be deleted
+```{bash}
+ cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+  rm *_aligned.bam
+  rm *_aligned.bai
+  rm *_bwa_mem.sam
+  rm *_FastqToSam.bam
+```
 
 
+```{bash}
+# Activate conda environment
+conda activate GATK_env
 
+ cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
 
+# Function for processing each file
+process_gatk_BaseRecalibrator() {
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+
+  ref_file=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
+  _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
+  -R $ref_file \
+  -I $1 \
+  --known-sites /home/mwkhan/Taste_Genes_Analysis/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
+  --known-sites /home/mwkhan/Taste_Genes_Analysis/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
+  -O ${SAMPLE_NAME}_sorted_recal_data.table
+
+  _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
+  -R $ref_file \
+  -I $1 \
+  --bqsr-recal-file ${SAMPLE_NAME}_sorted_recal_data.table \
+  -O ${SAMPLE_NAME}_sorted_BQSR.bam
+}
+
+export -f process_gatk_BaseRecalibrator
+
+# Run the function in parallel for all *.bam files
+#ls *006_marked_duplicates.bam *008_marked_duplicates.bam  | parallel -j 2 process_gatk_BaseRecalibrator
+ls   *_sorted.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
+```
 
 
 

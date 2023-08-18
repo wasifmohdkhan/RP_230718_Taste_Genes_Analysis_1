@@ -1,0 +1,72 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{bash}
+
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis
+work_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+mkdir -p $work_dir
+cd $work_dir
+
+process_picard_MergeSamFiles() {
+CHRIM_80_35=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
+CHRIM_80_22=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK/sorted_BQSR
+
+ SAMPLE_NAME=$(basename "$1" | sed -e 's/_sorted_BQSR.bam//')
+ 
+ _JAVA_OPTIONS="-Xmx90g" picard MergeSamFiles \
+      I=${CHRIM_80_35}/${SAMPLE_NAME}_sorted_BQSR.bam \
+      I=${CHRIM_80_22}/${SAMPLE_NAME}_sorted_BQSR.bam \
+      O=${SAMPLE_NAME}_sorted_BQSR_55genes.bam
+}
+
+# Export the function so it can be used by parallel
+export -f process_picard_MergeSamFiles
+
+# pass them to parallel
+in_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
+# try with one files
+ls $in_dir/*_sorted_BQSR.bam   | parallel -j 40 process_picard_MergeSamFiles
+
+```
+
+```{bash}
+conda activate qualimap_env
+
+unset DISPLAY
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+
+rm -r    ./sorted_BQSR_55genes_bamqc/Qualimap
+mkdir -p ./sorted_BQSR_55genes_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR_55genes.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted_BQSR_55genes.bam \
+      -outdir ./sorted_BQSR_55genes_bamqc/Qualimap/${SAMPLE_NAME}_sorted_BQSR_55genes_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted_BQSR_55genes.bam     | parallel -j 8 process_Qualimap
+
+## MultiQC
+/home/wasif_pclab/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_BQSR_55genes_bamqc/Qualimap \
+-o ./sorted_BQSR_55genes_bamqc/Qualimap
+```
+

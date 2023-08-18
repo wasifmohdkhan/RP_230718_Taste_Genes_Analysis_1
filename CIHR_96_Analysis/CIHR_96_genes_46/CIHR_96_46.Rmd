@@ -205,7 +205,7 @@ rm ./Fastqc_report/*_samtofastq_interleaved_fastqc.html
 mkdir /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles
 # copy appropriate bed fileto the working directory
 # New_hg38_Project_373.bed
-<!-- cp /media/Second_stor/prashen/Vivianne/T2R_sequences/December_2021/New_hg38_Project_293.bed \ -->
+<!-- copy /media/Second_stor/prashen/Vivianne/T2R_sequences/December_2021/New_hg38_Project_293.bed \ -->
 <!-- /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/CIHR_96_46_genes_293.bed -->
 ```
 
@@ -302,7 +302,38 @@ ls *_aligned.bam  | parallel -j 10 process_picard_SortSam
 ```
 
 
+```{bash}
+conda activate qualimap_env
 
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+
+rm -r    ./sorted_bamqc/Qualimap
+mkdir -p ./sorted_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted.bam \
+      -outdir ./sorted_bamqc/Qualimap/${SAMPLE_NAME}_sorted_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_bedfiles/New_hg38_Project_373_no_names.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted.bam     | parallel -j 5 process_Qualimap
+
+
+
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_bamqc/Qualimap \
+-o ./sorted_bamqc/Qualimap
+```
 
 ```{bash}
 # Activate conda environment
@@ -313,7 +344,7 @@ conda activate GATK_env
 # Function for processing each file
 process_gatk_BaseRecalibrator() {
 
-  SAMPLE_NAME=$(echo $1 | sed -e 's/*_sorted.bam//')
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
 
   ref_file=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
   _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
@@ -334,7 +365,7 @@ export -f process_gatk_BaseRecalibrator
 
 # Run the function in parallel for all *.bam files
 #ls *006_marked_duplicates.bam *008_marked_duplicates.bam  | parallel -j 2 process_gatk_BaseRecalibrator
-ls   *_sorted.bam                                | parallel -j 20 process_gatk_BaseRecalibrator
+ls   *_sorted.bam                                | parallel -j 10 process_gatk_BaseRecalibrator
 ```
 
 ## if everything looks good then previous files can be deleted

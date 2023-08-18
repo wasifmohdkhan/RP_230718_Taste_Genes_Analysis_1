@@ -102,17 +102,17 @@ mkdir -p Fastqc_report
 mkdir -p Aligned_bamqc
 ```
 
-
+## ***at this stage previous files were transferred to Jin_SBG_BMG computer for faster analysis*** 
 ```{bash}
 # Activate conda environment
 conda activate GATK_env
-cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
 
 # Function for processing each file
 process_SamToFastq_bwa() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_markilluminaadapters.bam//')
   # Path to your reference genome
-  REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+  REF="/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
 
   # Number of cores
   THREADS=2
@@ -122,9 +122,10 @@ process_SamToFastq_bwa() {
       CLIPPING_ATTRIBUTE=XT \
       CLIPPING_ACTION=2 \
       INTERLEAVE=true \
-      NON_PF=true
+      NON_PF=true \
+      TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
   
-  /home/wasif_pclab/anaconda3/envs/fastqc/bin/fastqc \
+  /home/mwkhan/anaconda3/envs/fastqc/bin/fastqc \
       ${SAMPLE_NAME}_samtofastq_interleaved.fq \
       -o ./Fastqc_report
   
@@ -140,28 +141,39 @@ export -f process_SamToFastq_bwa
 
 # Run the function in parallel for all *.bam files
 #ls *S1_markilluminaadapters.bam  | parallel -j 10 process_SamToFastq_bwa
-ls *_markilluminaadapters.bam     | parallel -j 20 process_SamToFastq_bwa
+ls *_markilluminaadapters.bam     | parallel -j 10 process_SamToFastq_bwa
 ```
 
 ```{bash}
-cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
+
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./Fastqc_report \
+-o ./Fastqc_report
+```
+
+```{bash}
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
 rm *_markilluminaadapters.bam
+rm *_markilluminaadapters_metrics.txt
 ```
 
 
 ```{bash}
 # Activate conda environment
 conda activate GATK_env
-cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/GATK_pipepile/GATK_BS384/FastqToGVCF
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
 
 # Function for processing each file
 process_MergeBamAlignment() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_bwa_mem.sam//')
   # Path to your reference genome
-  REF="/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
+  REF="/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna"
 
   
-  _JAVA_OPTIONS="-Xmx90g" picard MergeBamAlignment \
+  _JAVA_OPTIONS="-Xmx80g" picard MergeBamAlignment \
   ALIGNED_BAM=$1 \
   UNMAPPED_BAM=${SAMPLE_NAME}_FastqToSam.bam \
   OUTPUT=${SAMPLE_NAME}_aligned.bam \
@@ -173,13 +185,74 @@ process_MergeBamAlignment() {
   INCLUDE_SECONDARY_ALIGNMENTS=true \
   MAX_INSERTIONS_OR_DELETIONS=-1 \
   PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
-  ATTRIBUTES_TO_RETAIN=XS
+  ATTRIBUTES_TO_RETAIN=XS \
+  TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
 }
 
 export -f process_MergeBamAlignment
 
-# Run the function in parallel for all *.bam files
-#ls *S1_markilluminaadapters.bam  | parallel -j 10 process_MergeBamAlignment
 ls *_bwa_mem.sam     | parallel -j 10 process_MergeBamAlignment
 ```
 
+
+
+```{bash}
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
+rm *_bwa_mem.sam
+```
+
+
+```{bash}
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
+
+# Function for processing each file
+process_picard_SortSam() {
+  file=$1
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_aligned.bam//')
+  
+  _JAVA_OPTIONS="-Xmx80g" picard SortSam \
+      I=${SAMPLE_NAME}_aligned.bam \
+      O=${SAMPLE_NAME}_sorted.bam \
+      SORT_ORDER=coordinate \
+      TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK
+}
+export -f process_picard_SortSam
+
+# Run the function in parallel for all *.bam files
+ls *_aligned.bam  | parallel -j 20 process_picard_SortSam
+```
+
+
+```{bash}
+conda activate qualimap_env
+
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
+
+rm -r    ./sorted_bamqc/Qualimap
+mkdir -p ./sorted_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted.bam \
+      -outdir ./sorted_bamqc/Qualimap/${SAMPLE_NAME}_sorted_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /home/mwkhan/Taste_Genes_Analysis/References_Seqs/bed_files/Merged_bed_hg38_Jan15.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted.bam     | parallel -j 5 process_Qualimap
+
+
+
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_bamqc/Qualimap \
+-o ./sorted_bamqc/Qualimap
+```
