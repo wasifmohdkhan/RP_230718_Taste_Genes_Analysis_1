@@ -1,0 +1,80 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-08-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+## trial
+
+## sample map file
+
+```{bash}
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/sorted_BQSR_RG_55genes_HaplotypeCaller
+
+ls *_raw_variants.g.vcf.gz | \
+awk -F'_' -v PWD="$(pwd)" '{sample=$1; gsub(/^S/, "", sample); printf "CHRIM_%02d\t%s/%s\n", sample, PWD, $0}' | \
+sort -k1,1 > \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CHRIM_80_55_map.txt
+
+## Combine these map files for all the 550 samples 
+```
+
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/sorted_BQSR_RG_55genes_HaplotypeCaller
+
+ls *_raw_variants.g.vcf.gz | \
+awk -F'_' -v PWD="$(pwd)" '{sample=$1; gsub(/^S/, "", sample); printf "CIHR_%03d\t%s/%s\n", sample, PWD, $0}' | \
+sort -k1,1 > \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_96_55_map.txt
+```
+
+
+## append
+```{bash}
+cat \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CHRIM_80_55_map.txt \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_96_55_map.txt > \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/Samples550_55_map.txt
+
+```
+
+
+## one-time only merged bedtools required by GenomicsDBImport 
+```{bash}
+<!-- bedtools merge \ -->
+<!-- -i <(bedtools sort -i /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed) > \ -->
+<!-- /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names_BedtoolsMerged.bed -->
+
+```
+
+
+```{bash}
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
+# delete folder as it will be created automatically
+rm -r ./Samples550_genomicsdb_workspace
+
+_JAVA_OPTIONS="-Xmx90g" /home/wasif_pclab/Programs_Softwares/gatk-4.3.0.0/gatk GenomicsDBImport \
+    --genomicsdb-workspace-path ./Samples550_genomicsdb_workspace \
+    --sample-name-map ./Samples550_55_map.txt \
+    -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names_BedtoolsMerged.bed
+```
+
+
+```{bash}
+conda activate GATK_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
+
+_JAVA_OPTIONS="-Xmx90g" /home/wasif_pclab/Programs_Softwares/gatk-4.3.0.0/gatk GenotypeGVCFs \
+-R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+-V gendb:///media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/Samples550_genomicsdb_workspace \
+-O Samples550_55genes_GenotypeGVCFs.vcf
+```
+
