@@ -287,7 +287,7 @@ ls *_sorted.bam     | parallel -j 5 process_Qualimap
 ```{bash}
 # Activate conda environment
 conda activate GATK_env
-cd /media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/Samples550_sorted_sam_backup/Samples80_genes22_sorted_sam
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples550_Analysis/Samples550_sorted_sam_backup/Samples80_genes22_sorted_sam
 
 out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK/sorted_BQSR
 rm -r     ${out_dir}

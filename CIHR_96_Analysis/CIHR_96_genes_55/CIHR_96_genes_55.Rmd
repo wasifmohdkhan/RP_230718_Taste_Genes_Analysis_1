@@ -12,20 +12,20 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{bash}
 
 conda activate GATK_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis
-work_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis
+work_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
 mkdir -p $work_dir
 cd $work_dir
 
 process_picard_MergeSamFiles() {
-CHRIM_80_35=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
-CHRIM_80_22=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK/sorted_BQSR
+CIHR_96_46=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK/sorted_BQSR
+CIHR_96_9=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK/sorted_BQSR
 
  SAMPLE_NAME=$(basename "$1" | sed -e 's/_sorted_BQSR.bam//')
  
  _JAVA_OPTIONS="-Xmx90g" picard MergeSamFiles \
-      I=${CHRIM_80_35}/${SAMPLE_NAME}_sorted_BQSR.bam \
-      I=${CHRIM_80_22}/${SAMPLE_NAME}_sorted_BQSR.bam \
+      I=${CIHR_96_46}/${SAMPLE_NAME}_sorted_BQSR.bam \
+      I=${CIHR_96_9}/${SAMPLE_NAME}_sorted_BQSR.bam \
       O=${SAMPLE_NAME}_sorted_BQSR_55genes.bam 
 }
 
@@ -33,7 +33,7 @@ CHRIM_80_22=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis
 export -f process_picard_MergeSamFiles
 
 # pass them to parallel
-in_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
+in_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK/sorted_BQSR
 # try with one files
 ls $in_dir/*_sorted_BQSR.bam   | parallel -j 40 process_picard_MergeSamFiles
 
@@ -43,7 +43,7 @@ ls $in_dir/*_sorted_BQSR.bam   | parallel -j 40 process_picard_MergeSamFiles
 conda activate qualimap_env
 
 unset DISPLAY
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
 
 rm -r    ./sorted_BQSR_55genes_bamqc/Qualimap
 mkdir -p ./sorted_BQSR_55genes_bamqc/Qualimap
@@ -72,11 +72,11 @@ ls *_sorted_BQSR_55genes.bam     | parallel -j 8 process_Qualimap
 
 ## remove the bam files not required to save space 
 ```{bash}
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK/sorted_BQSR
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK/sorted_BQSR
 rm *_sorted_BQSR.bam
 rm *_sorted_recal_data.table
 rm *_sorted_BQSR.bai
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK/sorted_BQSR
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK/sorted_BQSR
 rm *_sorted_BQSR.bam
 rm *_sorted_recal_data.table
 rm *_sorted_BQSR.bai
@@ -84,10 +84,10 @@ rm *_sorted_BQSR.bai
 
 ## After merging bam files, they have two headers 
 e.g. 
-samtools view -H  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/S1_sorted_BQSR_55genes.bam
+samtools view -H  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/S1_sorted_BQSR_55genes.bam
 
 @RG     ID:HSP_VAL12407421-WS-A01_1148_2        SM:S1   LB:HSP_VAL12407421-WS-A01       PU:run1148_2    CN:McGill University and Genome Quebec Innovation Centre        PL:Illumina
-@RG     ID:HSP_VAL12506519-WS-A-A01_1713_2      SM:CHRIM_S1     LB:HSP_VAL12506519-WS-A-A01     PU:run1713_2    CN:Centre expertise et de services Genome Quebec        PL:Illumina
+@RG     ID:HSP_VAL12506519-WS-A-A01_1713_2      SM:CIHR_S1     LB:HSP_VAL12506519-WS-A-A01     PU:run1713_2    CN:Centre expertise et de services Genome Quebec        PL:Illumina
 has these two @RG header with different sample names.
 # to fix this
 
@@ -96,11 +96,11 @@ has these two @RG header with different sample names.
 <!-- _JAVA_OPTIONS="-Xmx90g" picard MergeSamFiles \ -->
 <!--       I=/media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/Samples550_sorted_sam_backup/Samples80_genes35_sorted_sam/S1_sorted.bam \ -->
 <!--       I=/media/wasif_pclab/VERBATIM_HD_PC/Samples384_Analysis/Samples550_sorted_sam_backup/Samples80_genes22_sorted_sam/S1_sorted.bam \ -->
-<!--       O=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/try_delete/S1_sorted_BQSR_55genes_try_delete.bam \ -->
+<!--       O=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/try_delete/S1_sorted_BQSR_55genes_try_delete.bam \ -->
 <!--       MERGE_SEQUENCE_DICTIONARIES=true -->
 
 <!-- ## check if there is one or two @RG headers -->
-<!-- samtools view -H /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/try_delete/S1_sorted_BQSR_55genes_try_delete.bam -->
+<!-- samtools view -H /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/try_delete/S1_sorted_BQSR_55genes_try_delete.bam -->
 
 <!-- # We still have two different @RG headers in the above bam file so it is better to -->
 <!-- # use the AddOrReplaceReadGroups -->
@@ -111,7 +111,7 @@ has these two @RG header with different sample names.
 # Activate conda environment
 conda activate GATK_env
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
 
 # Function for processing each file
 process_picard_AddOrReplaceReadGroups() {
@@ -123,7 +123,7 @@ process_picard_AddOrReplaceReadGroups() {
   _JAVA_OPTIONS="-Xmx90g" picard AddOrReplaceReadGroups \
         I=$1 \
         O=${SAMPLE_NAME}_sorted_BQSR_RG_55genes.bam \
-        RGSM=CHRIM_$SAMPLE_number \
+        RGSM=CIHR_$SAMPLE_number \
         RGLB=lib1 \
         RGPL=illumina \
         RGPU=unit1
@@ -138,8 +138,8 @@ ls    *_sorted_BQSR_55genes.bam  | parallel -j 40 process_picard_AddOrReplaceRea
 # Activate conda environment
 conda activate GATK_env
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
-mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/sorted_BQSR_RG_55genes_HaplotypeCaller
+cd        /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/sorted_BQSR_RG_55genes_HaplotypeCaller
 
 # Function for processing each file
 process_gatk_HaplotypeCaller() {
@@ -160,8 +160,4 @@ process_gatk_HaplotypeCaller() {
 export -f process_gatk_HaplotypeCaller
 ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
 ```
-
-
-
-
 

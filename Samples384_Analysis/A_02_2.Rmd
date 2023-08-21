@@ -236,7 +236,7 @@ process_Qualimap() {
   SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
   
     _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
-      -nt 1 \
+      -nt 5 \
       -bam ${SAMPLE_NAME}_sorted.bam \
       -outdir ./sorted_bamqc/Qualimap/${SAMPLE_NAME}_sorted_qualimap \
       --genome-gc-distr hg19 \
@@ -245,14 +245,140 @@ process_Qualimap() {
 
 export -f process_Qualimap
 # Run the function in parallel for all *.bam files
-ls *_sorted.bam     | parallel -j 5 process_Qualimap
+ls *_sorted.bam     | parallel -j 6 process_Qualimap
 
 
 
-cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+cd /home/mwkhan/Taste_Genes_Analysis/Samples_384_genes_55/Samples_384_5_GATK
 
 /home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
 --interactive --force \
 ./sorted_bamqc/Qualimap \
 -o ./sorted_bamqc/Qualimap
+```
+
+
+## sorted bam files are copied to VERBATIM_HD_PC as back up.
+## Use these sam files from VERBATIM_HD_PC to generate sorted_BQSR files in the computer 
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /media/wasif_pclab/VERBATIM_HD_PC/Samples550_Analysis/Samples550_sorted_sam_backup/Samples384_genes55_sorted_sam
+
+out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+rm -r     ${out_dir}
+mkdir -p  ${out_dir}
+
+# Function for processing each file
+process_gatk_BaseRecalibrator() {
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  
+  out_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+  
+  ref_file=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
+  
+  _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
+      -R $ref_file \
+      -I $1 \
+      --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
+      --known-sites /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
+      -O ${out_dir}/${SAMPLE_NAME}_sorted_recal_data.table
+
+  _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
+      -R $ref_file \
+      -I $1 \
+      --bqsr-recal-file ${out_dir}/${SAMPLE_NAME}_sorted_recal_data.table \
+      -O ${out_dir}/${SAMPLE_NAME}_sorted_BQSR.bam
+}
+
+export -f process_gatk_BaseRecalibrator
+ls   *_sorted.bam   | parallel -j 20 process_gatk_BaseRecalibrator
+```
+
+
+```{bash}
+conda activate qualimap_env
+
+unset DISPLAY
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+
+rm -r    ./sorted_BQSR_bamqc/Qualimap
+mkdir -p ./sorted_BQSR_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted_BQSR.bam \
+      -outdir ./sorted_BQSR_bamqc/Qualimap/${SAMPLE_NAME}_sorted_BQSR_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted_BQSR.bam     | parallel -j 8 process_Qualimap
+
+## MultiQC
+/home/wasif_pclab/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_BQSR_bamqc/Qualimap \
+-o ./sorted_BQSR_bamqc/Qualimap
+```
+
+```{bash }
+# Activate conda environment
+conda activate GATK_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK
+
+# Function for processing each file
+process_picard_AddOrReplaceReadGroups() {
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR_55genes.bam//')
+  SAMPLE_number=$(echo $1 | sed -n 's/^BS\([0-9]*\).*$/\1/p')
+  samtools index $1
+  
+  _JAVA_OPTIONS="-Xmx90g" picard AddOrReplaceReadGroups \
+        I=$1 \
+        O=${SAMPLE_NAME}_sorted_BQSR_RG_55genes.bam \
+        RGSM=CIHR_$SAMPLE_number \
+        RGLB=lib1 \
+        RGPL=illumina \
+        RGPU=unit1
+}
+
+export -f process_picard_AddOrReplaceReadGroups
+ls    *_sorted_BQSR_55genes.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
+```
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+
+cd        /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR_RG_55genes_HaplotypeCaller
+
+# Function for processing each file
+process_gatk_HaplotypeCaller() {
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR_RG_55genes.bam//')
+  
+  samtools index $1
+  
+  _JAVA_OPTIONS="-Xmx90g" gatk HaplotypeCaller \
+      -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+      -I $1 \
+      -O sorted_BQSR_RG_55genes_HaplotypeCaller/${SAMPLE_NAME}_raw_variants.g.vcf.gz \
+      --assembly-region-padding 100 \
+      -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/GATK_pipepile/bed_files/Merged_bed_hg38_Jan15_no_names.bed \
+      -ERC GVCF
+}
+
+export -f process_gatk_HaplotypeCaller
+ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
 ```
