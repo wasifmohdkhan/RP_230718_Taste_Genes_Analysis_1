@@ -356,5 +356,66 @@ ls *_sorted_BQSR.bam     | parallel -j 8 process_Qualimap
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
   rm *_sorted.bam_sorted_BQSR.bam
   rm *_sorted.bam_sorted_BQSR.bai
+```
 
+
+## The previous analysis did not include deduplication using markduplicates option
+below will be the analysis based on markduplicates. Since we need to merge
+sorted.bam files for different runs for the same samples later,
+to do that the bam files should have proper gatkdictionary i.e same name in @RG header in the bam files
+This analysis will be done in Jin_SBG_BMG computer
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+
+cd /home/mwkhan/Taste_Genes_Analysis/Samples550_sorted_sam_backup/Samples96_genes46_sorted_sam
+
+
+# Function for processing each file
+process_picard_AddOrReplaceReadGroups() {
+
+  work_dir=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+  mkdir -p /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  SAMPLE_number=$(echo $1 | sed -n 's/^S\([0-9]*\).*$/\1/p')
+  samtools index $1
+  
+  _JAVA_OPTIONS="-Xmx90g" picard AddOrReplaceReadGroups \
+        I=$1 \
+        O=${work_dir}/${SAMPLE_NAME}_sorted_RG.bam \
+        RGSM=CIHR_$SAMPLE_number \
+        RGLB=CIHR_96_46 \
+        RGPL=illumina \
+        RGPU=CIHR_96_46
+}
+
+export -f process_picard_AddOrReplaceReadGroups
+ls   *_sorted.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
+```
+
+## Mark duplicates
+```{bash}
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+
+process_MarkDuplicates() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG.bam//')
+
+  # _JAVA_OPTIONS="-Xmx90g" picard MarkDuplicates \
+  #     INPUT=$1 \
+  #     OUTPUT=${SAMPLE_NAME}_sorted_RG_dedup.bam \
+  #     M=${SAMPLE_NAME}_sorted_RG_dedup.txt \
+  #     TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK/
+      
+  samtools rmdup -s \
+  $1 \
+  ${SAMPLE_NAME}_sorted_RG_rmdup.bam \
+  --verbosity 2
+}
+export -f process_MarkDuplicates
+ls   *_sorted_RG.bam   | parallel -j 40 process_MarkDuplicates
+# for picard MarkDuplicates, do not use more than 2 threads
+# for samtools rmdup, 40 threads can be used
 ```

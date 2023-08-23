@@ -333,35 +333,45 @@ ls *_sorted_BQSR.bam     | parallel -j 8 process_Qualimap
 # Activate conda environment
 conda activate GATK_env
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
 
 # Function for processing each file
 process_picard_AddOrReplaceReadGroups() {
 
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR_55genes.bam//')
-  SAMPLE_number=$(echo $1 | sed -n 's/^BS\([0-9]*\).*$/\1/p')
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR.bam//')
+  SAMPLE_number=$(echo $1 | sed -e 's/_sorted_BQSR.bam//')
+  
   samtools index $1
   
   _JAVA_OPTIONS="-Xmx90g" picard AddOrReplaceReadGroups \
         I=$1 \
         O=${SAMPLE_NAME}_sorted_BQSR_RG_55genes.bam \
-        RGSM=CIHR_$SAMPLE_number \
+        RGSM=$SAMPLE_number \
         RGLB=lib1 \
         RGPL=illumina \
         RGPU=unit1
 }
 
 export -f process_picard_AddOrReplaceReadGroups
-ls    *_sorted_BQSR_55genes.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
+ls   *_sorted_BQSR.bam   | parallel -j 40 process_picard_AddOrReplaceReadGroups
 ```
+
+
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+
+rm *.bam.bai
+rm *_sorted_recal_data.table
+```
+
 
 
 ```{bash}
 # Activate conda environment
 conda activate GATK_env
 
-cd        /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK
-mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR_RG_55genes_HaplotypeCaller
+cd        /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR/sorted_BQSR_RG_55genes_HaplotypeCaller
 
 # Function for processing each file
 process_gatk_HaplotypeCaller() {

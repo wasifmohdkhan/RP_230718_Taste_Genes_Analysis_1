@@ -35,12 +35,38 @@ sort -k1,1 > \
 /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_96_55_map.txt
 ```
 
+```{bash}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR/sorted_BQSR_RG_55genes_HaplotypeCaller
+
+ls *_raw_variants.g.vcf.gz | \
+awk -F'_' -v PWD="$(pwd)" '{
+    if ($1 == "BS" && $2 == "Chrim") {
+        prefix="CHRIM";
+        sample=$3;
+        tag="_ii";
+    } else if ($1 == "BS" && $3 == "ii") {
+        prefix="CIHR";
+        sample=$2;
+        tag="_ii";
+    } else if ($1 == "BS") {
+        prefix="CIHR";
+        sample=$2;
+        tag="";
+    }
+    printf "%s_%s%s\t%s/%s\n", prefix, sample, tag, PWD, $0
+}' | \
+sort -k1,1 > \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_384_55_map.txt
+```
+
 
 ## append
 ```{bash}
 cat \
 /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CHRIM_80_55_map.txt \
-/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_96_55_map.txt > \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_96_55_map.txt \
+/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/CIHR_384_55_map.txt | \
+sort -k1,1 > \
 /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/Samples550_55_map.txt
 
 ```
