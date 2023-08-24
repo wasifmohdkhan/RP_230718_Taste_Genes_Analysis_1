@@ -101,6 +101,11 @@ cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Sample
 _JAVA_OPTIONS="-Xmx90g" /home/wasif_pclab/Programs_Softwares/gatk-4.3.0.0/gatk GenotypeGVCFs \
 -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
 -V gendb:///media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK/Samples550_genomicsdb_workspace \
--O Samples550_55genes_GenotypeGVCFs.vcf
+-O Samples550_55genes_GenotypeGVCFs.vcf.gz
+
+gunzip -c \
+Samples550_55genes_GenotypeGVCFs.vcf.gz > \
+Samples550_55genes_GenotypeGVCFs.vcf
+
 ```
 

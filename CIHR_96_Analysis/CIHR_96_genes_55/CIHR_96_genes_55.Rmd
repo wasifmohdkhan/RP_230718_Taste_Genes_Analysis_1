@@ -167,7 +167,7 @@ ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCalle
 
 ```{bash}
 
-conda activate GATK_env
+conda activate Picard_env
 
 work_dir=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
 mkdir -p $work_dir
@@ -189,11 +189,27 @@ CIHR_96_9=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIH
 export -f process_picard_MergeSamFiles
 
 # pass them to parallel
-in_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK/sorted_BQSR
+in_dir=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+in_dir2=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
 # try with one files
-ls $in_dir/*_sorted_RG.bam   | parallel -j 40 process_picard_MergeSamFiles
+ls $in_dir/*_sorted_RG.bam  | parallel -j 40 process_picard_MergeSamFiles
 
 ```
+
+2 files do not have 46 genes and 2 files for 9 genes is missing.
+copy them with changed name as in MergeSamFiles so that they can be processed together in the downstream analysis
+```{bash}
+cp_dir=/home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
+
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+cp ./S3_sorted_RG.bam ${cp_dir}/S3_sorted_RG_55genes.bam
+cp ./S4_sorted_RG.bam ${cp_dir}/S4_sorted_RG_55genes.bam
+
+cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK
+cp ./S2_sorted_RG.bam ${cp_dir}/S2_sorted_RG_55genes.bam
+cp ./S9_sorted_RG.bam ${cp_dir}/S9_sorted_RG_55genes.bam
+```
+
 
 ## Mark duplicates
 ```{bash}
@@ -219,7 +235,7 @@ process_MarkDuplicates() {
     samtools sort -n $1 | \
     samtools fixmate -m - - | \
     samtools sort - | \
-    samtools markdup -r - ${SAMPLE_NAME}_sorted_RG_markdup_55genes.bam \
+    samtools markdup -r - ${SAMPLE_NAME}_sorted_RG_55genes_markdup.bam \
     --verbosity 2
   
 }
@@ -236,29 +252,29 @@ conda activate qualimap_env
 unset DISPLAY
 cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/
 
-rm -r    ./sorted_RG_markdup_55genes_bamqc/Qualimap
-mkdir -p ./sorted_RG_markdup_55genes_bamqc/Qualimap
+rm -r    ./sorted_RG_55genes_markdup_bamqc/Qualimap
+mkdir -p ./sorted_RG_55genes_markdup_bamqc/Qualimap
 
 process_Qualimap() {
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_markdup_55genes.bam//')
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes_markdup.bam//')
   
     _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
       -nt 1 \
-      -bam ${SAMPLE_NAME}_sorted_RG_markdup_55genes.bam \
-      -outdir ./sorted_RG_markdup_55genes_bamqc/Qualimap/${SAMPLE_NAME}_sorted_RG_markdup_55genes_qualimap \
+      -bam ${SAMPLE_NAME}_sorted_RG_55genes_markdup.bam \
+      -outdir ./sorted_RG_55genes_markdup_bamqc/Qualimap/${SAMPLE_NAME}_sorted_RG_55genes_markdup_qualimap \
       --genome-gc-distr hg19 \
       --feature-file /home/mwkhan/Taste_Genes_Analysis/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed
 }
 
 export -f process_Qualimap
 # Run the function in parallel for all *.bam files
-ls *_sorted_RG_markdup_55genes.bam     | parallel -j 8 process_Qualimap
+ls *_sorted_RG_55genes_markdup.bam     | parallel -j 8 process_Qualimap
 
 ## MultiQC
 /home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
 --interactive --force \
-./sorted_RG_markdup_55genes_bamqc/Qualimap \
--o ./sorted_RG_markdup_55genes_bamqc/Qualimap
+./sorted_RG_55genes_markdup_bamqc/Qualimap \
+-o ./sorted_RG_55genes_markdup_bamqc/Qualimap
 ```
 
 ```{bash}
@@ -271,7 +287,7 @@ cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_5
 # Function for processing each file
 process_gatk_BaseRecalibrator() {
 
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_markdup_55genes.bam//')
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes_markdup.bam//')
   
 
   ref_file=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
@@ -287,11 +303,11 @@ process_gatk_BaseRecalibrator() {
       -R $ref_file \
       -I $1 \
       --bqsr-recal-file ${SAMPLE_NAME}_sorted_recal_data.table \
-      -O ${SAMPLE_NAME}_sorted_RG_markdup_BQSR_55genes.bam
+      -O ${SAMPLE_NAME}_sorted_RG_55genes_markdup_BQSR.bam
 }
 
 export -f process_gatk_BaseRecalibrator
-ls   *_sorted_RG_markdup_55genes.bam   | parallel -j 20 process_gatk_BaseRecalibrator
+ls   *_sorted_RG_55genes_markdup.bam   | parallel -j 20 process_gatk_BaseRecalibrator
 ```
 
 
@@ -302,26 +318,26 @@ ls   *_sorted_RG_markdup_55genes.bam   | parallel -j 20 process_gatk_BaseRecalib
 conda activate GATK_env
 
 cd        /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/
-mkdir -p  /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/sorted_RG_markdup_BQSR_HaplotypeCaller_55genes
+mkdir -p  /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK/sorted_RG_55genes_markdup_BQSR_HaplotypeCaller
 
 # Function for processing each file
 process_gatk_HaplotypeCaller() {
 
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_markdup_BQSR_55genes.bam//')
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes_markdup_BQSR.bam//')
   
   samtools index $1
   
   _JAVA_OPTIONS="-Xmx90g" gatk HaplotypeCaller \
       -R /home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
       -I $1 \
-      -O sorted_RG_markdup_BQSR_HaplotypeCaller_55genes/${SAMPLE_NAME}_raw_variants.g.vcf.gz \
+      -O sorted_RG_55genes_markdup_BQSR_HaplotypeCaller/${SAMPLE_NAME}_raw_variants.g.vcf.gz \
       --assembly-region-padding 100 \
       -L /home/mwkhan/Taste_Genes_Analysis/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed \
       -ERC GVCF
 }
 
 export -f process_gatk_HaplotypeCaller
-ls    *_sorted_RG_markdup_BQSR_55genes.bam  | parallel -j 20 process_gatk_HaplotypeCaller
+ls    *_sorted_RG_55genes_markdup_BQSR.bam  | parallel -j 20 process_gatk_HaplotypeCaller
 ## Do HaplotypeCaller on 20 threads
 ```
 

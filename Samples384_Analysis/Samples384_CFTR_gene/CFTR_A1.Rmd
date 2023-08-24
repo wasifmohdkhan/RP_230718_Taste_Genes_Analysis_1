@@ -165,6 +165,7 @@ tabix \
 -p vcf \
 Samples379_Combined_CFTR_Genotyped_renamed.g.vcf.gz
 
+
 bcftools annotate \
 -a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
 -c ID \

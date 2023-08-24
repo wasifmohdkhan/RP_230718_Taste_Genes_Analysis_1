@@ -1,0 +1,121 @@
+---
+title: "Vcf filtering and plink"
+output: html_document
+date: "2023-08-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+# annotation
+```{bash}
+conda activate SnpEff_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
+
+bcftools annotate \
+-a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
+-c ID \
+./Samples550_55genes_GenotypeGVCFs.vcf.gz > \
+./Samples550_55genes_GenotypeGVCFs_snpIDs.vcf
+
+
+_JAVA_OPTIONS="-Xmx90g" snpEff \
+-v hg38 \
+./Samples550_55genes_GenotypeGVCFs_snpIDs.vcf > \
+./Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf
+```
+
+# VCF default filtering
+```{bash}
+conda activate GATK_env
+input_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
+
+Plink_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+mkdir -p  $Plink_dir
+cd        $Plink_dir
+
+echo "number of variants before vcftoolsFilt"
+bcftools view -H $input_dir/Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf | wc -l
+
+gatk VariantFiltration \
+    -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+    -V $input_dir/Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf \
+    --filter-expression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0" \
+    --filter-name "PMC8120011_filter" \
+    -O Samples550_55genes_gatkVariantFilt.vcf
+
+## relaxing the filter to
+## "QD < 2.0 || FS > 60.0 || MQ < 35.0 || MQRankSum < -10.5 || ReadPosRankSum < -6.0 || SOR > 4.0"
+## does not change the number of SNPs, so it  is better to use the strict filter as
+# mentioned in PMC8120011 paper https://www-ncbi-nlm-nih-gov.uml.idm.oclc.org/pmc/articles/PMC8120011/#evab066-B49
+
+
+gatk SelectVariants \
+    -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+    -V Samples550_55genes_gatkVariantFilt.vcf \
+    --select-type-to-include SNP \
+    --exclude-filtered \
+    -O Samples550_55genes_gatkVariantFilt_snps_only.vcf
+    
+echo "number of variants after gatkVariantFilt_snps_only"
+bcftools view -H Samples550_55genes_gatkVariantFilt_snps_only.vcf | wc -l
+```
+
+
+```{bash}
+conda activate Plink_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Metadata_files
+
+plink \
+--vcf ./Samples379_Combined_CFTR_w_snpIDs_vcftoolsFilt.g.vcf \
+--double-id \
+--make-bed \
+--keep-allele-order \
+--make-pheno ${metadata_dir}/Samples379_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples379_Combined_Phenotype_with_sex_info.txt \
+--recode \
+--out ./Samples379_Combined_CFTR_Plink
+```
+
+
+```{bash}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
+plink \
+--file ./Samples379_Combined_CFTR_Plink \
+--geno 0.2 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.001 \
+--recode vcf \
+--assoc \
+--allow-no-sex \
+--out ./Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+```{bash}
+```
+
+
+
