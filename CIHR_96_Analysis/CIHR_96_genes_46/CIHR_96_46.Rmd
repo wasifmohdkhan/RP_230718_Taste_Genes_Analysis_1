@@ -396,27 +396,27 @@ export -f process_picard_AddOrReplaceReadGroups
 ls   *_sorted.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
 ```
 
-## Mark duplicates
-```{bash}
-conda activate GATK_env
-cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK
+<!-- ## Mark duplicates -->
+<!-- ```{bash} -->
+<!-- conda activate GATK_env -->
+<!-- cd /home/mwkhan/Taste_Genes_Analysis/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK -->
 
-process_MarkDuplicates() {
-  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG.bam//')
+<!-- process_MarkDuplicates() { -->
+<!--   SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG.bam//') -->
 
-  # _JAVA_OPTIONS="-Xmx90g" picard MarkDuplicates \
-  #     INPUT=$1 \
-  #     OUTPUT=${SAMPLE_NAME}_sorted_RG_dedup.bam \
-  #     M=${SAMPLE_NAME}_sorted_RG_dedup.txt \
-  #     TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK/
-      
-  samtools rmdup -s \
-  $1 \
-  ${SAMPLE_NAME}_sorted_RG_rmdup.bam \
-  --verbosity 2
-}
-export -f process_MarkDuplicates
-ls   *_sorted_RG.bam   | parallel -j 40 process_MarkDuplicates
-# for picard MarkDuplicates, do not use more than 2 threads
-# for samtools rmdup, 40 threads can be used
-```
+<!--   # _JAVA_OPTIONS="-Xmx90g" picard MarkDuplicates \ -->
+<!--   #     INPUT=$1 \ -->
+<!--   #     OUTPUT=${SAMPLE_NAME}_sorted_RG_dedup.bam \ -->
+<!--   #     M=${SAMPLE_NAME}_sorted_RG_dedup.txt \ -->
+<!--   #     TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK/ -->
+
+<!--   samtools rmdup -s \ -->
+<!--   $1 \ -->
+<!--   ${SAMPLE_NAME}_sorted_RG_rmdup.bam \ -->
+<!--   --verbosity 2 -->
+<!-- } -->
+<!-- export -f process_MarkDuplicates -->
+<!-- ls   *_sorted_RG.bam   | parallel -j 40 process_MarkDuplicates -->
+<!-- # for picard MarkDuplicates, do not use more than 2 threads -->
+<!-- # for samtools rmdup, 40 threads can be used -->
+<!-- ``` -->
