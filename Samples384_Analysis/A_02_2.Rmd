@@ -392,3 +392,36 @@ process_gatk_HaplotypeCaller() {
 export -f process_gatk_HaplotypeCaller
 ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
 ```
+
+
+```{bash}
+conda activate qualimap_env
+
+unset DISPLAY
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+
+rm -r    ./sorted_BQSR_RG_55genes_bamqc/Qualimap
+mkdir -p ./sorted_BQSR_RG_55genes_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_BQSR_RG_55genes.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted_BQSR_RG_55genes.bam \
+      -outdir ./sorted_BQSR_RG_55genes_bamqc/Qualimap/${SAMPLE_NAME}_sorted_BQSR_RG_55genes_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted_BQSR_RG_55genes.bam     | parallel -j 8 process_Qualimap
+
+## MultiQC
+/home/wasif_pclab/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+--cl-config '{max_table_rows: 10000}' \
+./sorted_BQSR_RG_55genes_bamqc/Qualimap \
+-o ./sorted_BQSR_RG_55genes_bamqc/Qualimap
+```

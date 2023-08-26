@@ -39,6 +39,21 @@ ls $in_dir/*_sorted_BQSR.bam   | parallel -j 40 process_picard_MergeSamFiles
 
 ```
 
+2 files do not have 46 genes and 2 files for 9 genes is missing.
+copy them with changed name as in MergeSamFiles so that they can be processed together in the downstream analysis
+```{bash}
+cp_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_55/CIHR_96_55_GATK
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_46/CIHR_96_46_GATK/sorted_BQSR
+cp ./S3_sorted_BQSR.bam ${cp_dir}/S3_sorted_BQSR_55genes.bam
+cp ./S4_sorted_BQSR.bam ${cp_dir}/S4_sorted_BQSR_55genes.bam
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_96_Analysis/CIHR_96_genes_9/CIHR_96_9_GATK/sorted_BQSR
+cp ./S2_sorted_BQSR.bam ${cp_dir}/S2_sorted_BQSR_55genes.bam
+cp ./S9_sorted_BQSR.bam ${cp_dir}/S9_sorted_BQSR_55genes.bam
+```
+
+
 ```{bash}
 conda activate qualimap_env
 
@@ -130,7 +145,8 @@ process_picard_AddOrReplaceReadGroups() {
 }
 
 export -f process_picard_AddOrReplaceReadGroups
-ls    *_sorted_BQSR_55genes.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
+#ls    *_sorted_BQSR_55genes.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
+ls    S2_sorted_BQSR_55genes.bam S3_sorted_BQSR_55genes.bam S4_sorted_BQSR_55genes.bam S9_sorted_BQSR_55genes.bam | parallel -j 40 process_picard_AddOrReplaceReadGroups
 ```
 
 
@@ -158,7 +174,8 @@ process_gatk_HaplotypeCaller() {
 }
 
 export -f process_gatk_HaplotypeCaller
-ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
+#ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
+ls    S2_sorted_BQSR_RG_55genes.bam S3_sorted_BQSR_RG_55genes.bam S4_sorted_BQSR_RG_55genes.bam S9_sorted_BQSR_RG_55genes.bam | parallel -j 40 process_gatk_HaplotypeCaller
 ```
 
 

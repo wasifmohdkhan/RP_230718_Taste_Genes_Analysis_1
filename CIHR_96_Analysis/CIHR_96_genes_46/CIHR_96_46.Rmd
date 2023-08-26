@@ -316,7 +316,8 @@ process_gatk_BaseRecalibrator() {
 }
 
 export -f process_gatk_BaseRecalibrator
-ls   *_sorted.bam   | parallel -j 20 process_gatk_BaseRecalibrator
+#ls   *_sorted.bam   | parallel -j 20 process_gatk_BaseRecalibrator
+ls   S3_sorted.bam S4_sorted.bam  | parallel -j 20 process_gatk_BaseRecalibrator
 ```
 
 ```{bash}

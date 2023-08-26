@@ -10,6 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
+# libraries
+```{r}
+library(here)
+library(tidyverse)
+```
+
 ## trial
 
 ## sample map file
@@ -71,6 +77,30 @@ sort -k1,1 > \
 
 ```
 
+## Remove duplicated samples and rename the remainig ones accordingly
+CHRIM_25,   CHRIM_59,     CHRIM_77,     CHRIM_79,   CIHR_092,     CIHR_243,     CIHR_246,     CIHR_251
+CHRIM_25_ii, CHRIM_59_ii, CHRIM_77_ii, CHRIM_79_ii, CIHR_092_ii,  CIHR_243_ii,  CIHR_246_ii,  CIHR_251_ii
+
+after that change the entries with _ii
+eg.. CHRIM_25_ii to CHRIM_25
+```{r}
+entries2reomve=c("CHRIM_25",   "CHRIM_59",     "CHRIM_77",     "CHRIM_79",   "CIHR_092",     "CIHR_243",     "CIHR_246",     "CIHR_251")
+Samples550_55_map = read.table(here::here("Samples550_Analysis/Samples550_GATK/Samples550_55_map.txt"),
+                               sep = "\t")
+Samples550_55_map_2 = Samples550_55_map %>% 
+  dplyr::filter(!V1 %in% entries2reomve) %>%
+  # to to remove the _ii suffix from the duplicated samples
+  mutate(V1 = str_replace(V1, "_ii$", ""))
+  
+Samples550_55_map_2
+## check the sample name and file path if it corresponds to the new sequences, especially for the duplciated ones
+
+write.table(Samples550_55_map_2,
+            here("Samples550_Analysis/Samples550_GATK/Samples550_55_map_2.txt"),
+           sep = "\t", row.names = F, col.names = F, quote = F)
+```
+
+
 
 ## one-time only merged bedtools required by GenomicsDBImport 
 ```{bash}
@@ -89,7 +119,7 @@ rm -r ./Samples550_genomicsdb_workspace
 
 _JAVA_OPTIONS="-Xmx90g" /home/wasif_pclab/Programs_Softwares/gatk-4.3.0.0/gatk GenomicsDBImport \
     --genomicsdb-workspace-path ./Samples550_genomicsdb_workspace \
-    --sample-name-map ./Samples550_55_map.txt \
+    --sample-name-map ./Samples550_55_map_2.txt \
     -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names_BedtoolsMerged.bed
 ```
 
