@@ -366,5 +366,39 @@ cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_
 rm *_sorted.bam
 ```
 
+## The previous analysis did not include deduplication using markduplicates option
+below will be the analysis based on markduplicates. Since we need to merge
+sorted.bam files for different runs for the same samples later,
+to do that the bam files should have proper gatkdictionary i.e same name in @RG header in the bam files
+This analysis will be done in Jin_SBG_BMG computer
 
+```{bash}
+# Activate conda environment
+conda activate Picard_env
+
+cd /home/mwkhan/Taste_Genes_Analysis/Samples550_sorted_sam_backup/Samples80_genes35_sorted_sam
+
+
+# Function for processing each file
+process_picard_AddOrReplaceReadGroups() {
+
+  work_dir=/home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+  mkdir -p /home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted.bam//')
+  SAMPLE_number=$(echo $1 | sed -n 's/^S\([0-9]*\).*$/\1/p')
+  samtools index $1
+  
+  _JAVA_OPTIONS="-Xmx90g" picard AddOrReplaceReadGroups \
+        I=$1 \
+        O=${work_dir}/${SAMPLE_NAME}_sorted_RG.bam \
+        RGSM=CHRIM_$SAMPLE_number \
+        RGLB=CHRIM_80_35 \
+        RGPL=illumina \
+        RGPU=CHRIM_80_35
+}
+
+export -f process_picard_AddOrReplaceReadGroups
+ls   *_sorted.bam  | parallel -j 40 process_picard_AddOrReplaceReadGroups
+```
 

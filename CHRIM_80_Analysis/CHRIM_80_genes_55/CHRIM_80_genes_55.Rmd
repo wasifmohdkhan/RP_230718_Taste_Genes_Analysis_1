@@ -161,7 +161,169 @@ export -f process_gatk_HaplotypeCaller
 ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
 ```
 
+## This is for dedup analysis
+# merge the two runs
+
+```{bash}
+
+conda activate Picard_env
+
+work_dir=/home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+mkdir -p $work_dir
+cd $work_dir
+
+process_picard_MergeSamFiles() {
+CHRIM_80_35=/home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+CHRIM_80_22=/home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+
+ SAMPLE_NAME=$(basename "$1" | sed -e 's/_sorted_RG.bam//')
+ 
+ _JAVA_OPTIONS="-Xmx90g" picard MergeSamFiles \
+      I=${CHRIM_80_35}/${SAMPLE_NAME}_sorted_RG.bam \
+      I=${CHRIM_80_22}/${SAMPLE_NAME}_sorted_RG.bam \
+      O=${SAMPLE_NAME}_sorted_RG_55genes.bam 
+}
+
+# Export the function so it can be used by parallel
+export -f process_picard_MergeSamFiles
+
+# pass them to parallel
+in_dir=/home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_35/CHRIM_80_35_GATK
+in_dir2=/home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_22/CHRIM_80_22_GATK
+# try with one files
+ls $in_dir/*_sorted_RG.bam  | parallel -j 40 process_picard_MergeSamFiles
+
+```
 
 
+## Mark duplicates
+```{bash}
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+
+process_MarkDuplicates() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes.bam//')
+
+  # _JAVA_OPTIONS="-Xmx90g" picard MarkDuplicates \
+  #     INPUT=$1 \
+  #     OUTPUT=${SAMPLE_NAME}_sorted_RG_dedup.bam \
+  #     M=${SAMPLE_NAME}_sorted_RG_dedup.txt \
+  #     TMP_DIR=/home/mwkhan/Taste_Genes_Analysis/tmp_dir_for_GATK/
+      
+  # samtools rmdup -s \
+  # $1 \
+  # ${SAMPLE_NAME}_sorted_RG_rmdup_55genes.bam \
+  # --verbosity 2
+  
+  # rmdup did not remove any reads so trying markdup
+
+    samtools sort -n $1 | \
+    samtools fixmate -m - - | \
+    samtools sort - | \
+    samtools markdup -r - ${SAMPLE_NAME}_sorted_RG_55genes_markdup.bam \
+    --verbosity 2
+  
+}
+export -f process_MarkDuplicates
+ls   *_sorted_RG_55genes.bam   | parallel -j 40 process_MarkDuplicates
+# for picard MarkDuplicates, do not use more than 2 threads
+# for samtools rmdup, 40 threads can be used
+# for samtools markdup, 40 threads can be used takes about 1 hour
+```
+
+```{bash}
+conda activate qualimap_env
+
+unset DISPLAY
+cd /home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/
+
+rm -r    ./sorted_RG_55genes_markdup_bamqc/Qualimap
+mkdir -p ./sorted_RG_55genes_markdup_bamqc/Qualimap
+
+process_Qualimap() {
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes_markdup.bam//')
+  
+    _JAVA_OPTIONS="-Xms10g -Xmx30g" qualimap bamqc \
+      -nt 1 \
+      -bam ${SAMPLE_NAME}_sorted_RG_55genes_markdup.bam \
+      -outdir ./sorted_RG_55genes_markdup_bamqc/Qualimap/${SAMPLE_NAME}_sorted_RG_55genes_markdup_qualimap \
+      --genome-gc-distr hg19 \
+      --feature-file /home/mwkhan/Taste_Genes_Analysis/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed
+}
+
+export -f process_Qualimap
+# Run the function in parallel for all *.bam files
+ls *_sorted_RG_55genes_markdup.bam     | parallel -j 8 process_Qualimap
+
+## MultiQC
+/home/mwkhan/anaconda3/envs/Multiqc_env/bin/multiqc \
+--interactive --force \
+./sorted_RG_55genes_markdup_bamqc/Qualimap \
+-o ./sorted_RG_55genes_markdup_bamqc/Qualimap
+```
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+cd /home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK
+
+
+
+# Function for processing each file
+process_gatk_BaseRecalibrator() {
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes_markdup.bam//')
+  
+
+  ref_file=/home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna
+  
+  _JAVA_OPTIONS="-Xmx90g" gatk BaseRecalibrator \
+      -R $ref_file \
+      -I $1 \
+      --known-sites /home/mwkhan/Taste_Genes_Analysis/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf \
+      --known-sites /home/mwkhan/Taste_Genes_Analysis/References_Seqs/Homo_sapiens_assembly38.known_indels.vcf \
+      -O ${SAMPLE_NAME}_sorted_recal_data.table
+
+  _JAVA_OPTIONS="-Xmx90g" gatk ApplyBQSR \
+      -R $ref_file \
+      -I $1 \
+      --bqsr-recal-file ${SAMPLE_NAME}_sorted_recal_data.table \
+      -O ${SAMPLE_NAME}_sorted_RG_55genes_markdup_BQSR.bam
+}
+
+export -f process_gatk_BaseRecalibrator
+ls   *_sorted_RG_55genes_markdup.bam   | parallel -j 20 process_gatk_BaseRecalibrator
+```
+
+
+
+
+```{bash}
+# Activate conda environment
+conda activate GATK_env
+
+cd        /home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/
+mkdir -p  /home/mwkhan/Taste_Genes_Analysis/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/sorted_RG_55genes_markdup_BQSR_HaplotypeCaller
+
+# Function for processing each file
+process_gatk_HaplotypeCaller() {
+
+  SAMPLE_NAME=$(echo $1 | sed -e 's/_sorted_RG_55genes_markdup_BQSR.bam//')
+  
+  samtools index $1
+  
+  _JAVA_OPTIONS="-Xmx90g" gatk HaplotypeCaller \
+      -R /home/mwkhan/Taste_Genes_Analysis/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
+      -I $1 \
+      -O sorted_RG_55genes_markdup_BQSR_HaplotypeCaller/${SAMPLE_NAME}_raw_variants.g.vcf.gz \
+      --assembly-region-padding 100 \
+      -L /home/mwkhan/Taste_Genes_Analysis/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names.bed \
+      -ERC GVCF
+}
+
+export -f process_gatk_HaplotypeCaller
+ls    *_sorted_RG_55genes_markdup_BQSR.bam  | parallel -j 20 process_gatk_HaplotypeCaller
+## Do HaplotypeCaller on 20 threads
+```
 
 

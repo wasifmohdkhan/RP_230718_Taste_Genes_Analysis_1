@@ -425,3 +425,25 @@ ls *_sorted_BQSR_RG_55genes.bam     | parallel -j 8 process_Qualimap
 ./sorted_BQSR_RG_55genes_bamqc/Qualimap \
 -o ./sorted_BQSR_RG_55genes_bamqc/Qualimap
 ```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
