@@ -161,6 +161,18 @@ export -f process_gatk_HaplotypeCaller
 ls    *_sorted_BQSR_RG_55genes.bam  | parallel -j 40 process_gatk_HaplotypeCaller
 ```
 
+## copy to external hard drive to save space
+```{bash}
+find /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/ \
+-type f \( -name "*.bam" -o -name "*.bai" \) | parallel -j 40 \
+--no-notice cp {} /media/wasif_pclab/VERBATIM_HD_PC/Samples550_Analysis/Sample550_sorted_BQSR_RG_backup/Sample80_55genes_sorted_BQSR_RG_backup/
+
+# first make sure the files are properly copied
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CHRIM_80_Analysis/CHRIM_80_genes_55/CHRIM_80_55_GATK/
+rm ./*.{bam,bai}
+
+```
+
 ## This is for dedup analysis
 # merge the two runs
 
@@ -325,5 +337,6 @@ export -f process_gatk_HaplotypeCaller
 ls    *_sorted_RG_55genes_markdup_BQSR.bam  | parallel -j 20 process_gatk_HaplotypeCaller
 ## Do HaplotypeCaller on 20 threads
 ```
+
 
 
