@@ -428,13 +428,13 @@ ls *_sorted_BQSR_RG_55genes.bam     | parallel -j 8 process_Qualimap
 
 ## copy to external hard drive to save space
 ```{bash}
-find /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/ \
+find /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR/ \
 -type f \( -name "*.bam" -o -name "*.bai" \) | parallel -j 40 \
 --no-notice cp {} /media/wasif_pclab/VERBATIM_HD_PC/Samples550_Analysis/Sample550_sorted_BQSR_RG_backup/Sample384_55genes_sorted_BQSR_RG_backup/
 
 # first make sure the files are properly copied
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/
-rm ./*.{bam,bai}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/CIHR_384_Analysis/CIHR_384_genes_55/CIHR_384_55_GATK/sorted_BQSR
+rm *.{bam,bai}
 
 ```
 
