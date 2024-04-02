@@ -1,0 +1,353 @@
+---
+title: "538 samples, metadata, phenotype, genotype, covariates"
+output: html_document
+date: "2024-03-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+rm(list = ls())
+```
+
+libraries
+```{r}
+library(here)
+library(tidyverse)
+
+library(vcfR)
+library(doParallel)
+library(missForest)
+library(mice) 
+```
+
+
+```{r}
+# from another R project
+metadata538 = read.csv(here("../RP_230728_Metadata_ECC_study/Samples538_combined/Samples538_metadata_17_columns_240306.txt"),
+                        sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+metadata538
+```
+
+
+```{r}
+metadata538 %>% group_by(Sex) %>% summarise(n = n())
+metadata538 %>% group_by(ECC_status) %>% summarise(n = n())
+```
+
+
+Required by plink Binary ('0' = control, '1' = case)
+Required by plink Sex code ('1' = male, '2' = female, '0' = unknown)
+FID (Family ID) and IID (Individual ID) for it to correctly identify individuals
+
+```{r}
+metadata538_2 = metadata538 %>% 
+  select(sampleid, ECC_status, Sex, Age, Urban_status, SEFI_score) %>% 
+  rename(IID  = sampleid) %>%
+  mutate(FID = IID) %>%
+  mutate(Sex = case_when( # AS Original in data 1, Female | 2, Male 
+    Sex == 0 ~ "Female",
+    Sex == 1 ~ "Male")) %>% 
+  mutate(Sex = case_when( # AS 	required by plink Sex code ('1' = male, '2' = female, '0' = unknown)
+    Sex == "Female" ~ 2,
+    Sex == "Male" ~ 1,
+    TRUE ~ 0 )) %>% 
+  relocate(FID, IID, Sex, ECC_status)
+  
+  
+metadata538_2
+```
+
+### Make genotype file
+# rmd file to get the "Samples550_55_map_2.txt" is  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_01.Rmd
+```{r}
+Samples550_55_map_2 <- read.table(here("Samples550_Analysis/Samples550_GATK/Samples550_55_map_2.txt"), header = F, sep = "\t")
+Samples550_55_map_2
+
+Samples538_55_map = Samples550_55_map_2 %>% 
+  filter(V1 %in% metadata538_2$sampleid)
+Samples538_55_map
+
+write.table(Samples538_55_map,
+            here("Samples538_Analysis/Metadata538_files/Samples538_55_map.txt"),
+           sep = "\t", row.names = F, col.names = F, quote = F)
+```
+
+```{bash}
+<!-- source /home/wasif_pclab/anaconda3/etc/profile.d/conda.sh -->
+<!-- conda activate GATK_env -->
+
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK -->
+<!-- # delete folder as it will be created automatically -->
+<!-- rm -r ./Samples538_genomicsdb_workspace -->
+
+<!-- _JAVA_OPTIONS="-Xmx90g" /home/wasif_pclab/Programs_Softwares/gatk-4.3.0.0/gatk GenomicsDBImport \ -->
+<!--     --genomicsdb-workspace-path ./Samples538_genomicsdb_workspace \ -->
+<!--     --sample-name-map ../Metadata538_files/Samples538_55_map.txt \ -->
+<!--     -L /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/bed_files/Merged_bed_hg38_Jan15_no_names_BedtoolsMerged.bed -->
+#takes about 15-20 minutes
+```
+
+
+```{bash}
+<!-- source /home/wasif_pclab/anaconda3/etc/profile.d/conda.sh -->
+<!-- conda activate GATK_env -->
+
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK -->
+
+<!-- _JAVA_OPTIONS="-Xmx90g" /home/wasif_pclab/Programs_Softwares/gatk-4.3.0.0/gatk GenotypeGVCFs \ -->
+<!-- -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \ -->
+<!-- -V gendb:///media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_genomicsdb_workspace \ -->
+<!-- -O Samples538_55genes_GenotypeGVCFs.vcf.gz -->
+
+<!-- gunzip -c \ -->
+<!-- Samples538_55genes_GenotypeGVCFs.vcf.gz > \ -->
+<!-- Samples538_55genes_GenotypeGVCFs.vcf -->
+
+```
+
+
+### Check if the sampleid in the vcf file matches the sampleid in the metadata file
+# get the sample names from the VCF file
+```{r}
+# Load the VCF file
+vcf <- read.vcfR(here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs.vcf"))
+vcf
+# Extract sample names
+vcf_sample_names <- colnames(vcf@gt)[-1] %>% as.data.frame()
+
+colnames(vcf_sample_names) = "sample_names"
+vcf_sample_names
+```
+
+
+## Check if the names in the vcf file match the names in the metadata file
+output should be true
+```{r}
+# Check if they are exactly the same
+identical(vcf_sample_names$sample_names, metadata538_2$IID)
+
+```
+
+# Phenotype
+```{r}
+Phenotype = metadata538_2 %>% 
+  dplyr::select(FID, IID, ECC_status)
+
+write.table(Phenotype,
+     here("Samples538_Analysis/Metadata538_files/Samples538_Combined_Phenotype.txt"),
+     col.names = F,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
+
+# Phenotype_with_sex_info
+```{r}
+Phenotype_with_sex_info = metadata538_2 %>% 
+  dplyr::select(FID, IID, Sex, ECC_status)
+
+write.table(Phenotype_with_sex_info,
+     here("Samples538_Analysis/Metadata538_files/Samples538_Combined_Phenotype_with_sex_info.txt"),
+     col.names = F,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
+
+To include covariates with first generate plink vcf file with filters and then recode it to have 0,1,2 format of genotype
+use this format to impute the missing ethnicities
+and generate the covariate file including ethnicity
+
+<!-- ```{bash} -->
+<!-- conda activate Plink_env -->
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/ -->
+
+<!-- metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/ -->
+<!-- inupt_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/ -->
+
+<!-- plink \ -->
+<!-- --vcf ${inupt_dir}/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf \ -->
+<!-- --double-id \ -->
+<!-- --make-bed \ -->
+<!-- --keep-allele-order \ -->
+<!-- --make-pheno ${metadata_dir}/Samples538_Combined_Phenotype.txt 1 \ -->
+<!-- --update-sex ${metadata_dir}/Samples538_Combined_Phenotype_with_sex_info.txt \ -->
+<!-- --recode \ -->
+<!-- --out ./Samples538_55gene_Plink -->
+<!-- ``` -->
+
+<!-- # filter -->
+<!-- ```{bash} -->
+<!-- conda activate Plink_env -->
+
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/ -->
+<!-- plink \ -->
+<!-- --file ./Samples538_55gene_Plink \ -->
+<!-- --geno 0.5 \ -->
+<!-- --maf 0.01 \ -->
+<!-- --not-chr x \ -->
+<!-- --hwe 0.001 \ -->
+<!-- --recode A \ -->
+<!-- --allow-no-sex \ -->
+<!-- --out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_recode_vcf -->
+
+<!-- # We do not need these files so delete them and -->
+<!-- # keep onlySamples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_recode_vcf.raw -->
+<!-- rm ./Samples538_55gene_Plink.log -->
+<!-- rm ./Samples538_55gene_Plink.nosex -->
+<!-- rm ./Samples538_55gene_Plink.fam -->
+<!-- rm ./Samples538_55gene_Plink.bim -->
+<!-- rm ./Samples538_55gene_Plink.bed -->
+<!-- rm ./Samples538_55gene_Plink.ped -->
+<!-- rm ./Samples538_55gene_Plink.map -->
+<!-- rm ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_recode_vcf.vcf -->
+<!-- rm ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_recode_vcf.log -->
+
+<!-- ``` -->
+
+<!-- read the recoded vcf file -->
+<!-- ```{r} -->
+<!-- Samples538_55gene_Plink_vcf =  -->
+<!--   read.table(here("Samples538_Analysis/Metadata538_files/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_recode_vcf.raw"), -->
+<!--                                           header = T, -->
+<!--                                           sep = " ") -->
+<!-- Samples538_55gene_Plink_vcf -->
+
+<!-- Samples538_55gene_Plink_vcf = Samples538_55gene_Plink_vcf %>%  -->
+<!--   select(-c(FID, PAT, MAT, SEX, PHENOTYPE)) -->
+<!-- Samples538_55gene_Plink_vcf -->
+
+<!-- ## just for trying something, impute 0s in the genotyping data -->
+<!-- ## Assuming major allele at for missing genotype -->
+<!-- Samples538_55gene_Plink_vcf[is.na(Samples538_55gene_Plink_vcf)] <- 0  -->
+<!-- Samples538_55gene_Plink_vcf -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- sum(is.na(Samples538_55gene_Plink_vcf)) -->
+<!-- ``` -->
+
+
+<!-- Ethnicity before imputation are in this file -->
+<!-- /media/Second_stor/wasif/WK_Rprojects/RP_230728_Metadata_ECC_study/Samples554_combined/Samples553_metadata_16_columns_w_ethnicities_231010.txt -->
+
+### Import ethnicity file
+```{r}
+Samples553_metadata = read.table(here("../RP_230728_Metadata_ECC_study/Samples554_combined/Samples553_metadata_16_columns_w_ethnicities_231010.txt"),
+                                 header = T,
+                                 sep = "\t")
+Samples553_metadata
+Samples553_metadata_ethnicity = Samples553_metadata %>%
+  select(sampleid, Ethnicity)
+Samples553_metadata_ethnicity
+```
+
+
+<!-- Merge the vcf file with ethinicity file -->
+# ```{r}
+# Samples538_55gene_Plink_vcf_Ethnicity = Samples538_55gene_Plink_vcf %>% 
+#   left_join(Samples553_metadata_ethnicity, by = c("IID" = "sampleid"))
+# Samples538_55gene_Plink_vcf_Ethnicity
+# Samples538_55gene_Plink_vcf_Ethnicity = Samples538_55gene_Plink_vcf_Ethnicity %>% 
+#   relocate(IID, Ethnicity) %>% 
+#   column_to_rownames(var = "IID") %>% 
+#   mutate(across(everything(), as.factor))
+# Samples538_55gene_Plink_vcf_Ethnicity
+# ```
+# 
+
+# ```{r}
+# # where_matrix <- matrix(FALSE, nrow = nrow(Samples538_55gene_Plink_vcf_Ethnicity), ncol = ncol(Samples538_55gene_Plink_vcf_Ethnicity)) # Initialize with FALSE
+# # where_matrix[is.na(Samples538_55gene_Plink_vcf_Ethnicity[,1]), 1] <- TRUE # Set TRUE for missing values in the first column
+# # where_matrix[,1]
+# # 
+# # where_df = data.frame(where_matrix)
+# # colnames(where_df) = colnames(Samples538_55gene_Plink_vcf_Ethnicity)
+# # rownames(where_df) = rownames(Samples538_55gene_Plink_vcf_Ethnicity)
+# # where_df
+# ```
+
+
+# ```{r}
+# # Record start time
+# start_time <- Sys.time()
+# 
+# 
+# Samples538_55gene_Plink_vcf_Ethnicity_mice <- mice::mice(Samples538_55gene_Plink_vcf_Ethnicity,
+#                                                            # where = where_df,
+#                                                            m = 1, method = 'pmm', maxit = 1)
+# 
+# # Record end time
+# end_time <- Sys.time()
+# 
+# difftime(end_time, start_time, units = "mins")
+# ```
+# 
+# 
+# ```{r}
+# Samples538_55gene_Plink_vcf_Ethnicity_imputed <- mice::complete(Samples538_55gene_Plink_vcf_Ethnicity_mice, 1)
+# Samples538_55gene_Plink_vcf_Ethnicity_imputed
+# ```
+# 
+# ```{r}
+# # Assuming Samples538_55gene_Plink_vcf_Ethnicity is your data frame with missing values
+# imputed_results <- missForest(Samples538_55gene_Plink_vcf_Ethnicity)
+# 
+# # Extracting the imputed data frame
+# Samples538_55gene_Plink_vcf_Ethnicity_imputed <- imputed_results$ximp
+# ```
+
+The above command for imputation are not working so imputing ethnicity from metadat
+```{r}
+Samples553_metadata_2 = Samples553_metadata %>% 
+  column_to_rownames(var = "sampleid") %>%
+  mutate(across(where(is.character), as.factor))
+
+Samples553_metadata_2_mice = mice::mice(Samples553_metadata_2)
+Samples553_metadata_imputed = mice::complete(Samples553_metadata_2_mice, 1)
+Samples553_metadata_imputed =Samples553_metadata_imputed %>% 
+  rownames_to_column(var = "sampleid") %>% 
+  select(sampleid, Ethnicity)
+Samples553_metadata_imputed
+```
+
+
+```{r}
+Samples553_metadata_imputed %>%
+  group_by(Ethnicity) %>%
+  summarise(Count = n())
+```
+
+# Covar file
+```{r}
+metadata538_3 =metadata538_2 %>% 
+  left_join(Samples553_metadata_imputed, by = c("IID" = "sampleid")) 
+
+Phenotype_with_sex_info = metadata538_3 %>% 
+  dplyr::select(FID, IID, Sex, Age, Urban_status, SEFI_score, Ethnicity) %>% 
+  mutate(row_id = row_number()) %>%  # Create a temporary row identifier
+  pivot_wider(
+    names_from = Ethnicity, 
+    values_from = Ethnicity,
+    values_fill = list(Ethnicity = 0),  # Fill missing with 0
+    values_fn = list(Ethnicity = length)  # Count occurrences
+  ) %>% 
+  select(-row_id)   # Remove the temporary identifier
+Phenotype_with_sex_info
+
+write.table(Phenotype_with_sex_info,
+     here("Samples538_Analysis/Metadata538_files/Samples538_Combined_covariates.txt"),
+     col.names = T,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
+
+

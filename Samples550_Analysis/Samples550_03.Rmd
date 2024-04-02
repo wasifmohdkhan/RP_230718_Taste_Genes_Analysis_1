@@ -1,0 +1,465 @@
+---
+title: "Vcf filtering and plink 553 samples"
+output: html_document
+date: "2023-08-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r}
+library(openxlsx)
+
+```
+
+# annotation
+<!-- ```{bash} -->
+<!-- conda activate SnpEff_env -->
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK -->
+
+<!-- bcftools annotate \ -->
+<!-- -a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \ -->
+<!-- -c ID \ -->
+<!-- ./Samples550_55genes_GenotypeGVCFs.vcf.gz > \ -->
+<!-- ./Samples550_55genes_GenotypeGVCFs_snpIDs.vcf -->
+
+
+<!-- _JAVA_OPTIONS="-Xmx90g" snpEff \ -->
+<!-- -v hg38 \ -->
+<!-- ./Samples550_55genes_GenotypeGVCFs_snpIDs.vcf > \ -->
+<!-- ./Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf -->
+<!-- ``` -->
+
+<!-- # VCF default filtering -->
+<!-- ```{bash} -->
+<!-- conda activate GATK_env -->
+<!-- input_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK -->
+
+<!-- Plink_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis -->
+<!-- mkdir -p  $Plink_dir -->
+<!-- cd        $Plink_dir -->
+
+<!-- echo "number of variants before vcftoolsFilt" -->
+<!-- bcftools view -H $input_dir/Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf | wc -l -->
+
+<!-- gatk VariantFiltration \ -->
+<!--     -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \ -->
+<!--     -V $input_dir/Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf \ -->
+<!--     --filter-expression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0" \ -->
+<!--     --filter-name "PMC8120011_filter" \ -->
+<!--     -O Samples550_55genes_gatkVariantFilt.vcf -->
+
+<!-- ## relaxing the filter to -->
+<!-- ## "QD < 2.0 || FS > 60.0 || MQ < 35.0 || MQRankSum < -10.5 || ReadPosRankSum < -6.0 || SOR > 4.0" -->
+<!-- ## does not change the number of SNPs, so it  is better to use the strict filter as -->
+<!-- # mentioned in PMC8120011 paper https://www-ncbi-nlm-nih-gov.uml.idm.oclc.org/pmc/articles/PMC8120011/#evab066-B49 -->
+
+
+<!-- gatk SelectVariants \ -->
+<!--     -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \ -->
+<!--     -V Samples550_55genes_gatkVariantFilt.vcf \ -->
+<!--     --select-type-to-include SNP \ -->
+<!--     --exclude-filtered \ -->
+<!--     -O Samples550_55genes_gatkVariantFilt_snps_only.vcf -->
+
+<!-- echo "number of variants after gatkVariantFilt_snps_only" -->
+<!-- bcftools view -H Samples550_55genes_gatkVariantFilt_snps_only.vcf | wc -l -->
+<!-- ``` -->
+
+
+<!-- ```{bash} -->
+<!-- conda activate Plink_env -->
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis -->
+<!-- metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Metadata_files -->
+
+<!-- plink \ -->
+<!-- --vcf ./Samples379_Combined_CFTR_w_snpIDs_vcftoolsFilt.g.vcf \ -->
+<!-- --double-id \ -->
+<!-- --make-bed \ -->
+<!-- --keep-allele-order \ -->
+<!-- --make-pheno ${metadata_dir}/Samples379_Combined_Phenotype.txt 1 \ -->
+<!-- --update-sex ${metadata_dir}/Samples379_Combined_Phenotype_with_sex_info.txt \ -->
+<!-- --recode \ -->
+<!-- --out ./Samples379_Combined_CFTR_Plink -->
+<!-- ``` -->
+
+
+<!-- ```{bash} -->
+<!-- conda activate Plink_env -->
+
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis -->
+<!-- plink \ -->
+<!-- --file ./Samples379_Combined_CFTR_Plink \ -->
+<!-- --geno 0.2 \ -->
+<!-- --maf 0.01 \ -->
+<!-- --not-chr x \ -->
+<!-- --hwe 0.001 \ -->
+<!-- --recode vcf \ -->
+<!-- --assoc \ -->
+<!-- --allow-no-sex \ -->
+<!-- --out ./Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001 -->
+<!-- ``` -->
+
+```{bash}
+#bcftools annotate requires bgzipped files
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+bgzip \
+-c ../Samples550_GATK/Samples553_55genes_GenotypeGVCFs.vcf > \
+Samples553_55genes_GenotypeGVCFs_renamed.g.vcf.gz
+
+tabix \
+-p vcf \
+Samples553_55genes_GenotypeGVCFs_renamed.g.vcf.gz
+
+bcftools annotate \
+-a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
+-c ID \
+Samples553_55genes_GenotypeGVCFs_renamed.g.vcf.gz > \
+Samples553_55genes_GenotypeGVCFs_renamed_w_SNPIDs.g.vcf
+
+```
+
+# Applying filters to the VCF
+```{bash}
+<!-- vcftools defults -->
+<!--          --maf 0 -->
+<!--         --maxDP 150 -->
+<!--         --max-meanDP 150 -->
+<!--         --minDP 5 -->
+<!--         --min-meanDP 5 -->
+<!--         --minQ 30 -->
+<!--         --max-missing 0.5 -->
+        
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+VCF_IN=$root_dir/Samples553_55genes_GenotypeGVCFs_renamed_w_SNPIDs.g.vcf
+VCF_OUT=$root_dir/Samples553_55genes_GenotypeGVCFs_renamed_w_SNPIDs_filtered.g.vcf
+
+# set filters
+MAF=0.00
+MAX_MISS=0.5 # default 0.5, somewhat counter-intuitive 0 is totally missing, 1 is none missing
+QUAL=30 # default 30
+MIN_DEPTH=5 # default 5
+MAX_DEPTH=150 # # default 150
+
+
+# perform the filtering with vcftools
+vcftools \
+--vcf $VCF_IN \
+--remove-indels \
+--maf $MAF \
+--max-missing $MAX_MISS \
+--minQ $QUAL \
+--min-meanDP $MIN_DEPTH \
+--max-meanDP $MAX_DEPTH \
+--minDP $MIN_DEPTH \
+--maxDP $MAX_DEPTH \
+--recode \
+--stdout > $VCF_OUT
+
+cat out.log
+echo "number of SNPs after the above filtering: "
+bcftools view -H $VCF_OUT | wc -l
+```
+
+
+
+```{bash}
+conda activate Plink_env
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Metadata_files
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+plink \
+--vcf ./Samples553_55genes_GenotypeGVCFs_renamed_w_SNPIDs_filtered.g.vcf \
+--double-id \
+--make-bed \
+--keep-allele-order \
+--make-pheno ${metadata_dir}/Samples553_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples553_Combined_Phenotype_with_sex_info.txt \
+--recode \
+--out ./Samples553_55gene_Plink
+```
+
+
+```{bash}
+conda activate Plink_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+plink \
+--bfile ./Samples553_55gene_Plink \
+--freq \
+--out ./Samples553_55gene_Plink_genes_freq_stat
+```
+
+
+
+```{bash}
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Metadata_files
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+plink \
+--bfile ./Samples553_55gene_Plink \
+--freq \
+--within ${metadata_dir}/Samples553_Combined_Phenotype.txt \
+--out ./Samples553_55gene_Plink_genes_freq_stat_by_caries
+```
+
+
+```{bash}
+plink \
+--bfile ./Samples553_55gene_Plink \
+--test-missing \
+--out ./Samples553_55gene_Plink_test_missing
+```
+
+
+copied and saved run-diffmiss-qc.pl from https://github.com/guigotoe/ExomeChip/blob/master/bin/run-diffmiss-qc.pl
+into the /home/wasif_pclab/anaconda3/envs/Plink_env/bin
+```{bash}
+conda activate Plink_env
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+perl /home/wasif_pclab/anaconda3/envs/Plink_env/bin/run-diffmiss-qc.pl \
+./Samples553_55gene_Plink_test_missing
+```
+
+
+# filter
+```{bash}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+plink \
+--file ./Samples553_55gene_Plink \
+--geno 0.5 \
+--maf 0.0001 \
+--not-chr x \
+--hwe 0.0001 \
+--recode vcf \
+--assoc \
+--allow-no-sex \
+--out ./Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001
+
+# output
+<!-- 1597 variants and 553 people pass filters and QC. -->
+<!-- 0 variants removed due to missing genotype data (--geno) -->
+<!-- --hwe: 51 variants removed due to Hardy-Weinberg exact test. -->
+<!-- 486 variants removed due to minor allele threshold(s) -->
+```
+
+
+
+```{bash, engine.opts='-l'}
+# Activate your conda environment by specifying the full path to the 'activate' script.
+source /home/wasif_pclab/anaconda3/etc/profile.d/conda.sh
+conda activate SnpEff_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
+
+snpEff \
+-v hg38 \
+./Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001.vcf > \
+./Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf
+```
+
+
+
+# add genes to the plink assoc file and 
+
+```{r}
+
+# Read VCF file
+vcf <- read.vcfR(here("Samples550_Analysis/Plink_analysis/Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf"))
+
+
+# Extract chromosome and position
+chrom <- vcf@fix[,1]
+pos <- vcf@fix[,2]
+
+# Extract the INFO column
+info <- vcf@fix[,8]
+
+# Extract the ANN information from INFO by removing the 'ANN=' prefix
+ann_info <- gsub("^ANN=", "", info)
+
+# Each element of 'ann_info' can have multiple annotations (separated by comma),
+# and each annotation has multiple sub-fields (separated by '|').
+
+# Function to parse a single annotation
+parse_ann <- function(ann) {
+  # Split the annotation into sub-fields
+  sub_fields <- strsplit(ann, "\\|")[[1]]
+  
+  # Return the gene name and variant type if they exist
+  if (length(sub_fields) >= 4) {
+    return(c(sub_fields[4], sub_fields[2])) # sub_fields[2] contains the variant type
+  } else {
+    return(c(NA, NA))
+  }
+}
+
+# Parse the ANN field for each variant
+genes_and_variant_types <- t(sapply(ann_info, parse_ann)) # transpose to make each gene-variant pair a row
+
+# Create a dataframe with the chromosome, position, gene name, and variant type
+df_chromPOS_to_gene_variant <- data.frame(CHROM = chrom, POS = pos, GENE = genes_and_variant_types[,1], VARIANT_TYPE = genes_and_variant_types[,2])
+df_chromPOS_to_gene_variant
+```
+
+## Assign gene name to assoc file
+```{r}
+assoc_file = read.table(here("Samples550_Analysis/Plink_analysis/Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001.assoc"),
+                        header = T)
+assoc_file
+assoc_file = assoc_file %>% 
+  mutate(BP = as.character(BP),
+         CHR = as.character(CHR))
+  
+assoc_file
+```
+
+
+
+
+# merge
+```{r}
+assoc_file_df_chromPOS_to_gene_variant =  inner_join(assoc_file, df_chromPOS_to_gene_variant,
+                                             by = c("CHR" = "CHROM", "BP" = "POS"))
+assoc_file_df_chromPOS_to_gene_variant
+
+assoc_file_df_chromPOS_to_gene_variant_adjP = assoc_file_df_chromPOS_to_gene_variant %>% 
+  mutate(p_BH = p.adjust(P, method = "BH"),
+         p_bonferroni = p.adjust(P, method = "bonferroni") ) %>% 
+  arrange(p_bonferroni) %>% 
+  mutate(BP= as.numeric(BP))
+assoc_file_df_chromPOS_to_gene_variant_adjP
+```
+
+
+```{r}
+# Set the size of the graphic device
+dev.new(width=18, height=6)
+
+# Prepare the data
+gwas_results <- assoc_file_df_chromPOS_to_gene_variant_adjP %>%
+  mutate(log_p_bonferroni = -log10(p_bonferroni)) %>%
+  arrange(as.numeric(CHR), BP) %>%
+  mutate(LABEL = paste(SNP, GENE, VARIANT_TYPE, sep = "_"))  # create new LABEL column
+
+# Create an ordered factor for GENE based on the order in the arranged dataframe
+gwas_results$GENE <- factor(gwas_results$GENE, levels = unique(gwas_results$GENE))
+
+# Set a color palette with a large number of colors
+num_colors <- length(unique(gwas_results$GENE))
+my_palette <- rainbow(num_colors)
+
+# Shuffle the palette
+set.seed(123)  # for reproducible results
+my_palette <- sample(my_palette)
+
+# Create a scatter plot
+manhattan_plot = ggplot(gwas_results, aes(x = GENE, y = log_p_bonferroni, color = GENE)) +
+  geom_point(alpha = 0.5) +
+  scale_color_manual(values = my_palette) +
+  geom_hline(yintercept = 1.3, linetype = "dashed", color = "red") +
+  geom_text(data = subset(gwas_results, log_p_bonferroni > 3.5), aes(label = LABEL), size = 4, vjust = 0, hjust = 0,check_overlap = F) +
+  # ggrepel::geom_text_repel(data = subset(gwas_results, log_p_bonferroni > 4), aes(label = LABEL), 
+  #                        nudge_x = 0., nudge_y = 0.0, size = 3, check_overlap = F) +
+  labs(x = "GENEs arranged based on chr positions", y = "-log10(p_bonferroni)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10)) +
+  guides(color = FALSE)
+
+
+
+# Save the plot
+ggsave(here("Samples550_Analysis/Plink_analysis/Samples553_55gene_manhattan_plot.png"),
+       plot = manhattan_plot,
+       width = 18, height = 6, dpi = 450)
+manhattan_plot
+```
+
+```{r}
+assoc_file_df_chromPOS_to_gene_variant_adjP_2= assoc_file_df_chromPOS_to_gene_variant_adjP %>% 
+  # scientific notation for  the values where there are more than 3 0s after the decimal and 
+    mutate_if(is.numeric, ~ ifelse(str_detect(sprintf("%.5f", .), "^0\\.000"), formatC(., format = "e", digits = 3), .)) 
+
+assoc_file_df_chromPOS_to_gene_variant_adjP_2
+
+
+```
+
+
+```{r}
+assoc_file_df_chromPOS_to_gene_variant_adjP_3 = assoc_file_df_chromPOS_to_gene_variant_adjP %>% 
+  filter(p_bonferroni < 0.05) %>% 
+  arrange(GENE) %>% 
+  mutate(Location_GRCh38 = paste0("chr", CHR, ":", BP),
+         Effect_allele = A1,
+         Allele_frq_ECC = F_A,
+         Allele_frq_CF = F_U) %>% 
+  mutate(OR = ifelse(OR < 0.001, "<0.001", formatC(OR, format = "f", digits = 3)),
+         Allele_frq_ECC = ifelse(Allele_frq_ECC < 0.001, "<0.001", formatC(Allele_frq_ECC, format = "f", digits = 3)),
+         Allele_frq_CF = ifelse(Allele_frq_CF < 0.001, "<0.001", formatC(Allele_frq_CF, format = "f", digits = 3)),
+         P = formatC(P, format = "e", digits = 2),
+         p_bonferroni = formatC(p_bonferroni, format = "e", digits = 2)  ) %>% 
+  dplyr::select(GENE, SNP, Location_GRCh38, Effect_allele, Allele_frq_ECC, Allele_frq_CF, CHISQ, P, OR, p_bonferroni, VARIANT_TYPE)
+assoc_file_df_chromPOS_to_gene_variant_adjP_3
+```
+
+```{r}
+# Create a new workbook
+wb <- createWorkbook()
+
+# Add your data frame (df) to the first sheet
+addWorksheet(wb, "Plink_association")
+writeData(wb, "Plink_association", assoc_file_df_chromPOS_to_gene_variant_adjP_3)
+
+# Define explanations
+explanations <- data.frame(Column = c("CHR", "SNP", "BP", "A1", "F_A", "F_U", "A2", 
+                                      "CHISQ", "P", "OR", "CHROM", "GENE", "VARIANT_TYPE", 
+                                      "p_BH", "p_bonferroni"),
+                           Explanation = c("The chromosome on which the SNP resides.",
+                                           "The ID of the SNP.",
+                                           "The base-pair position of the SNP on the chromosome.",
+                                           "The minor allele of the SNP (the less common variant).",
+                                           "The frequency of the minor allele (A1) in the Affected (diseased) group.",
+                                           "The frequency of the minor allele (A1) in the Unaffected (control) group.",
+                                           "The major allele of the SNP (the more common variant).",
+                                           "The chi-square statistic, a measure of the difference between observed and expected frequencies in a statistical test.",
+                                           "The p-value for the association between the SNP and the phenotype of interest.",
+                                           "The odds ratio. This value is present if the phenotype is binary.",
+                                           "Chromosome where the SNP is located. Seems redundant with CHR, unless it's used in a different context within your data.",
+                                           "The gene in which the SNP is located.",
+                                           "The type of variant the SNP represents. Typically, SNPs are either missense, nonsense, synonymous, or in a non-coding region.",
+                                           "The p-value adjusted by the Benjamini-Hochberg method, which controls the false discovery rate (FDR).",
+                                           "The p-value adjusted by the Benjamini-Yekutieli method, another method to control the FDR, especially under conditions of positive dependence."))
+
+# Add explanations to the "Explanations" sheet
+addWorksheet(wb, "Explanations")
+writeData(wb, "Explanations", explanations)
+
+# Save the workbook
+saveWorkbook(wb,
+             here("Samples550_Analysis/Plink_analysis/Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001_assoc_gene_Padj.xlsx"),
+             overwrite = T)
+```
+
+
+```{r}
+# Load packages
+library(flextable)
+library(officer)
+
+# Convert dataframe to flextable
+ft <- flextable::flextable(assoc_file_df_chromPOS_to_gene_variant_adjP_3)
+
+# Create new Word document and add the table
+doc <- officer::read_docx()
+doc <- flextable::body_add_flextable(doc, value = ft)
+
+# Save the Word document
+print(doc,
+      target = here("Samples550_Analysis/Plink_analysis/Samples553_55gene_Plink_filtered_geno.5_maf.01_hwe.001_assoc_gene_Padj.docx"))
+```
+
+

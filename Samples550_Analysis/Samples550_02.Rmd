@@ -1,7 +1,7 @@
 ---
-title: "Vcf filtering and plink"
+title: "metadata 553 samples"
 output: html_document
-date: "2023-08-24"
+date: "2024-03-13"
 ---
 
 ```{r setup, include=FALSE}
@@ -9,95 +9,123 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## R Markdown
-# annotation
-```{bash}
-conda activate SnpEff_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
+libraries
+```{r}
+library(here)
+library(tidyverse)
 
-bcftools annotate \
--a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
--c ID \
-./Samples550_55genes_GenotypeGVCFs.vcf.gz > \
-./Samples550_55genes_GenotypeGVCFs_snpIDs.vcf
-
-
-_JAVA_OPTIONS="-Xmx90g" snpEff \
--v hg38 \
-./Samples550_55genes_GenotypeGVCFs_snpIDs.vcf > \
-./Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf
-```
-
-# VCF default filtering
-```{bash}
-conda activate GATK_env
-input_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
-
-Plink_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
-mkdir -p  $Plink_dir
-cd        $Plink_dir
-
-echo "number of variants before vcftoolsFilt"
-bcftools view -H $input_dir/Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf | wc -l
-
-gatk VariantFiltration \
-    -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
-    -V $input_dir/Samples550_55genes_GenotypeGVCFs_snpIDs_anno.vcf \
-    --filter-expression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0" \
-    --filter-name "PMC8120011_filter" \
-    -O Samples550_55genes_gatkVariantFilt.vcf
-
-## relaxing the filter to
-## "QD < 2.0 || FS > 60.0 || MQ < 35.0 || MQRankSum < -10.5 || ReadPosRankSum < -6.0 || SOR > 4.0"
-## does not change the number of SNPs, so it  is better to use the strict filter as
-# mentioned in PMC8120011 paper https://www-ncbi-nlm-nih-gov.uml.idm.oclc.org/pmc/articles/PMC8120011/#evab066-B49
-
-
-gatk SelectVariants \
-    -R /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_full_analysis_set.fna \
-    -V Samples550_55genes_gatkVariantFilt.vcf \
-    --select-type-to-include SNP \
-    --exclude-filtered \
-    -O Samples550_55genes_gatkVariantFilt_snps_only.vcf
-    
-echo "number of variants after gatkVariantFilt_snps_only"
-bcftools view -H Samples550_55genes_gatkVariantFilt_snps_only.vcf | wc -l
+library(vcfR)
 ```
 
 
-```{bash}
-conda activate Plink_env
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Plink_analysis
-metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Metadata_files
-
-plink \
---vcf ./Samples379_Combined_CFTR_w_snpIDs_vcftoolsFilt.g.vcf \
---double-id \
---make-bed \
---keep-allele-order \
---make-pheno ${metadata_dir}/Samples379_Combined_Phenotype.txt 1 \
---update-sex ${metadata_dir}/Samples379_Combined_Phenotype_with_sex_info.txt \
---recode \
---out ./Samples379_Combined_CFTR_Plink
+```{r}
+# from another R project
+metadata553 = read.csv(here("../RP_230728_Metadata_ECC_study/Samples554_combined/Samples553_metadata_17_columns_231220.txt"),
+                        sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+metadata553
 ```
 
 
-```{bash}
-conda activate Plink_env
-
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples384_Analysis/Samples384_CFTR_gene/Plink_analysis
-plink \
---file ./Samples379_Combined_CFTR_Plink \
---geno 0.2 \
---maf 0.01 \
---not-chr x \
---hwe 0.001 \
---recode vcf \
---assoc \
---allow-no-sex \
---out ./Samples379_Combined_CFTR_Plink_filtered_geno.2_maf.01_hwe.001
+```{r}
+metadata553 %>% group_by(Sex) %>% summarise(n = n())
+metadata553 %>% group_by(ECC_status) %>% summarise(n = n())
 ```
 
 
+Required by plink Binary ('0' = control, '1' = case)
+Required by plink Sex code ('1' = male, '2' = female, '0' = unknown)
 
 
+```{r}
+metadata553_2 = metadata553 %>% 
+  select(sampleid, ECC_status, Sex) %>% 
+  mutate(Family_id = sampleid) %>%
+  mutate(Sex = case_when( # AS Original in data 1, Female | 2, Male 
+    Sex == 0 ~ "Female",
+    Sex == 1 ~ "Male")) %>% 
+  mutate(Sex = case_when( # AS 	required by plink Sex code ('1' = male, '2' = female, '0' = unknown)
+    Sex == "Female" ~ 2,
+    Sex == "Male" ~ 1,
+    TRUE ~ 0 )) %>% 
+  relocate(sampleid, Family_id, Sex, ECC_status)
+  
+  
+metadata553_2
+```
+
+### Check if the sampleid in the vcf file matches the sampleid in the metadata file
+# get the sample names from the VCF file
+```{r}
+# Load the VCF file
+vcf <- read.vcfR(here("Samples550_Analysis/Samples550_GATK/Samples550_55genes_GenotypeGVCFs.vcf"))
+vcf
+# Extract sample names
+vcf_sample_names <- colnames(vcf@gt)[-1] %>% as.data.frame()
+
+colnames(vcf_sample_names) = "sample_names"
+vcf_sample_names
+```
+
+
+# Remove samples from vcf files
+As We do not have metadata for these samples
+the file name 550 actually has 554 samples
+```{bash}
+cd  /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples550_Analysis/Samples550_GATK
+# ^CIHR_103
+bcftools view \
+-s ^CIHR_103 \
+./Samples550_55genes_GenotypeGVCFs.vcf > \
+./Samples553_55genes_GenotypeGVCFs.vcf
+```
+
+### Check if the sampleid in the vcf file matches the sampleid in the metadata file
+# get the sample names from the VCF file
+```{r}
+# Load the VCF file
+vcf <- read.vcfR(here("Samples550_Analysis/Samples550_GATK/Samples553_55genes_GenotypeGVCFs.vcf"))
+vcf
+# Extract sample names
+vcf_sample_names <- colnames(vcf@gt)[-1] %>% as.data.frame()
+
+colnames(vcf_sample_names) = "sample_names"
+vcf_sample_names
+```
+
+
+## Check if the names in the vcf file match the names in the metadata file
+output should be true
+```{r}
+# Check if they are exactly the same
+identical(vcf_sample_names$sample_names, metadata553_2$sampleid)
+
+```
+
+# Phenotype
+```{r}
+Phenotype = metadata553_2 %>% 
+  dplyr::select(sampleid, Family_id, ECC_status)
+
+write.table(Phenotype,
+     here("Samples550_Analysis/Metadata_files/Samples553_Combined_Phenotype.txt"),
+     col.names = F,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
+
+# Phenotype_with_sex_info
+```{r}
+Phenotype_with_sex_info = metadata553_2 %>% 
+  dplyr::select(sampleid, Family_id, Sex, ECC_status)
+
+write.table(Phenotype_with_sex_info,
+     here("Samples550_Analysis/Metadata_files/Samples553_Combined_Phenotype_with_sex_info.txt"),
+     col.names = F,
+     row.names = F,
+     quote = F,
+     sep = "\t")
+  
+```
 

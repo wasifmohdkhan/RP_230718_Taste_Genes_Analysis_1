@@ -1,0 +1,268 @@
+---
+title: "538 vcf annotation, quality, and visualisation"
+output: html_document
+date: "2024-03-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{bash}
+#bcftools annotate requires bgzipped files
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+
+bgzip \
+-c ./Samples538_55genes_GenotypeGVCFs.vcf > \
+./Samples538_55genes_GenotypeGVCFs.vcf.gz
+
+tabix \
+-p vcf \
+Samples538_55genes_GenotypeGVCFs.vcf.gz
+
+bcftools annotate \
+-a /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/References_Seqs/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
+-c ID \
+Samples538_55genes_GenotypeGVCFs.vcf.gz > \
+Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf
+bcftools view -H Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf | wc -l
+```
+
+
+```{bash}
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_VCFqual
+
+## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_VCFqual
+file_prefix=Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf
+
+
+# Calculate allele frequency
+vcftools --vcf ../$file_prefix --out $file_prefix --freq2  --max-alleles 2
+# Calculate mean depth per individual
+vcftools --vcf ../$file_prefix --out $file_prefix --depth
+# Calculate mean depth per site
+vcftools --vcf ../$file_prefix --out $file_prefix --site-mean-depth
+# Calculate site quality
+vcftools --vcf ../$file_prefix --out $file_prefix --site-quality 
+# Calculate proportion of missing data per individual
+vcftools --vcf ../$file_prefix --out $file_prefix --missing-indv
+# Calculate proportion of missing data per site
+vcftools --vcf ../$file_prefix --out $file_prefix --missing-site
+# Calculate heterozygosity and inbreeding coefficient per individual
+vcftools --vcf ../$file_prefix --out $file_prefix --het 
+
+```
+
+# Variant quality
+here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf
+```{r}
+var_qual <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.lqual"),
+                       delim = "\t", col_names = c("chr", "pos", "qual"), skip = 1)
+a <- ggplot(var_qual, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 100)
+```
+
+# Variant mean depth
+```{r}
+var_depth <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.ldepth.mean"),
+                        delim = "\t", col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
+a <- ggplot(var_depth, aes(mean_depth)) + geom_de nsity(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+
+summary(var_depth$mean_depth)
+
+a + theme_light() + xlim(0, 400)
+```
+
+# Variant missingness
+```{r}
+var_miss <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.lmiss"),
+                       delim = "\t", col_names = c("chr", "pos", "nchr", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(var_miss, aes(fmiss)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.05)
+
+summary(var_miss$fmiss)
+```
+
+# Minor allele frequency
+```{r}
+var_freq <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.frq"),
+                       delim = "\t", col_names = c("chr", "pos", "nalleles", "nchr", "a1", "a2"), skip = 1)
+# find minor allele frequency
+var_freq$maf <- var_freq %>% select(a1, a2) %>% apply(1, function(z) min(z))
+a <- ggplot(var_freq, aes(maf)) + geom_bar(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.6) + ylim(0, 10)
+summary(var_freq$maf)
+```
+
+# Individual based statistics
+# Mean depth per individual
+```{r}
+ind_depth <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.idepth"),
+                        delim = "\t", col_names = c("ind", "nsites", "depth"), skip = 1)
+a <- ggplot(ind_depth, aes(depth)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Proportion of missing data per individual
+```{r}
+ind_miss  <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.imiss"),
+                        delim = "\t", col_names = c("ind", "ndata", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(ind_miss, aes(fmiss)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Heterozygosity and inbreeding coefficient per individual
+```{r}
+ind_het <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.het"),
+                      delim = "\t", col_names = c("ind","ho", "he", "nsites", "f"), skip = 1)
+a <- ggplot(ind_het, aes(f)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+
+# Applying filters to the VCF
+```{bash}
+<!-- vcftools defults -->
+<!--          --maf 0 -->
+<!--         --maxDP 150 -->
+<!--         --max-meanDP 150 -->
+<!--         --minDP 5 -->
+<!--         --min-meanDP 5 -->
+<!--         --minQ 30 -->
+<!--         --max-missing 0.5 -->
+        
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+VCF_IN=$root_dir/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf
+VCF_OUT=$root_dir/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf
+
+# set filters
+MAF=0.00
+MAX_MISS=0.5 # default 0.5, somewhat counter-intuitive 0 is totally missing, 1 is none missing
+QUAL=30 # default 30
+MIN_DEPTH=5 # default 5
+MAX_DEPTH=150 # # default 150
+
+
+# perform the filtering with vcftools
+vcftools \
+--vcf $VCF_IN \
+--maf $MAF \
+--max-missing $MAX_MISS \
+--minQ $QUAL \
+--min-meanDP $MIN_DEPTH \
+--minDP $MIN_DEPTH \
+--recode \
+--stdout > $VCF_OUT
+# other options
+#--max-meanDP $MAX_DEPTH \
+#--maxDP $MAX_DEPTH \
+# --remove-indels \
+cat out.log
+echo "number of SNPs after the above filtering: "
+bcftools view -H $VCF_OUT | wc -l
+```
+
+```{bash}
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_VCFqual
+
+## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_VCFqual
+file_prefix=Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf
+
+
+# Calculate allele frequency
+vcftools --vcf ../$file_prefix --out $file_prefix --freq2  --max-alleles 2
+# Calculate mean depth per individual
+vcftools --vcf ../$file_prefix --out $file_prefix --depth
+# Calculate mean depth per site
+vcftools --vcf ../$file_prefix --out $file_prefix --site-mean-depth
+# Calculate site quality
+vcftools --vcf ../$file_prefix --out $file_prefix --site-quality 
+# Calculate proportion of missing data per individual
+vcftools --vcf ../$file_prefix --out $file_prefix --missing-indv
+# Calculate proportion of missing data per site
+vcftools --vcf ../$file_prefix --out $file_prefix --missing-site
+# Calculate heterozygosity and inbreeding coefficient per individual
+vcftools --vcf ../$file_prefix --out $file_prefix --het 
+
+```
+
+# Variant quality
+here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf
+```{r}
+var_qual <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.lqual"),
+                       delim = "\t", col_names = c("chr", "pos", "qual"), skip = 1)
+a <- ggplot(var_qual, aes(qual)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 100)
+```
+
+# Variant mean depth
+```{r}
+var_depth <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.ldepth.mean"),
+                        delim = "\t", col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
+a <- ggplot(var_depth, aes(mean_depth)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+
+summary(var_depth$mean_depth)
+
+a + theme_light() + xlim(0, 400)
+```
+
+# Variant missingness
+```{r}
+var_miss <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.lmiss"),
+                       delim = "\t", col_names = c("chr", "pos", "nchr", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(var_miss, aes(fmiss)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.05)
+
+summary(var_miss$fmiss)
+```
+
+# Minor allele frequency
+```{r}
+var_freq <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.frq"),
+                       delim = "\t", col_names = c("chr", "pos", "nalleles", "nchr", "a1", "a2"), skip = 1)
+# find minor allele frequency
+var_freq$maf <- var_freq %>% select(a1, a2) %>% apply(1, function(z) min(z))
+a <- ggplot(var_freq, aes(maf)) + geom_bar(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+a + theme_light() + xlim(0, 0.6) + ylim(0, 10)
+summary(var_freq$maf)
+```
+
+# Individual based statistics
+# Mean depth per individual
+```{r}
+ind_depth <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.idepth"),
+                        delim = "\t", col_names = c("ind", "nsites", "depth"), skip = 1)
+a <- ggplot(ind_depth, aes(depth)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Proportion of missing data per individual
+```{r}
+ind_miss  <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.imiss"),
+                        delim = "\t", col_names = c("ind", "ndata", "nfiltered", "nmiss", "fmiss"), skip = 1)
+a <- ggplot(ind_miss, aes(fmiss)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```
+
+# Heterozygosity and inbreeding coefficient per individual
+```{r}
+ind_het <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf.het"),
+                      delim = "\t", col_names = c("ind","ho", "he", "nsites", "f"), skip = 1)
+a <- ggplot(ind_het, aes(f)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a + theme_light()
+```

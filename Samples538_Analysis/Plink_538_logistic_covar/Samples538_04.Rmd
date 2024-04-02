@@ -1,0 +1,297 @@
+---
+title: "538 Plink analysis logistic with covariates"
+output: html_document
+date: "2024-03-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{bash}
+conda activate Plink_env
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
+
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+inupt_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/
+
+plink \
+--vcf ${inupt_dir}/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf \
+--double-id \
+--make-bed \
+--keep-allele-order \
+--make-pheno ${metadata_dir}/Samples538_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples538_Combined_Phenotype_with_sex_info.txt \
+--recode \
+--out ./Samples538_55gene_Plink
+```
+
+### PCA for population stratification
+
+```{bash}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+
+
+plink \
+--bfile ./Samples538_55gene_Plink \
+--geno 0.5 \
+--mind 0.05 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.001 \
+--pca 3 \
+--out Samples538_55gene_Plink_pca
+```
+
+## add the output PC1,  PC2, PC3, to the covariate file
+```{r}
+
+```
+
+# plot
+```{r}
+# Step 1: Read the file
+# Load the file, treating no character as a comment
+pca_data <- read.table(here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_pca.eigenvec"),
+                       header = F, sep = "", comment.char = "#", as.is = TRUE)
+pca_data
+colnames(pca_data) <- c("FID", "IID", "PC1", "PC2", "PC3")
+
+pca_data
+# Proceed with your analysis, for example, plotting PCA results
+ggplot(data = pca_data, aes(x = PC1, y = PC2)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "PCA Plot", x = "Principal Component 1 (PC1)", y = "Principal Component 2 (PC2)")
+```
+
+
+```{bash}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+
+
+plink \
+--file ./Samples538_55gene_Plink \
+--geno 0.5 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.001 \
+--recode vcf \
+--logistic \
+--ci 0.95 \
+--covar ${metadata_dir}/Samples538_Combined_covariates.txt \
+--covar-name Age,Sex,SEFI_score \
+--allow-no-sex \
+--out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
+
+```
+
+
+```{bash, engine.opts='-l'}
+# Activate your conda environment by specifying the full path to the 'activate' script.
+<!-- source /home/wasif_pclab/anaconda3/etc/profile.d/conda.sh -->
+conda activate SnpEff_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
+
+snpEff \
+-v hg38 \
+./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.vcf > \
+./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf
+```
+
+# add genes to the plink assoc file and 
+
+```{r}
+
+# Read VCF file
+vcf <- read.vcfR(here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf"))
+
+
+# Extract chromosome and position
+chrom <- vcf@fix[,1]
+pos <- vcf@fix[,2]
+
+# Extract the INFO column
+info <- vcf@fix[,8]
+
+# Extract the ANN information from INFO by removing the 'ANN=' prefix
+ann_info <- gsub("^ANN=", "", info)
+
+# Each element of 'ann_info' can have multiple annotations (separated by comma),
+# and each annotation has multiple sub-fields (separated by '|').
+
+# Function to parse a single annotation
+# Updated parse_ann function from the previous correction
+parse_ann <- function(ann) {
+  # Split the annotation into sub-fields
+  sub_fields <- strsplit(ann, "\\|")[[1]]
+  
+  # Check if there are enough sub-fields to extract the desired information
+  if (length(sub_fields) >= 11) {
+    gene_name <- sub_fields[4]
+    variant_type <- sub_fields[2]
+    hgvs_p <- sub_fields[11] # Extract HGVS.p information
+    return(c(gene_name, variant_type, hgvs_p))
+  } else {
+    return(c(NA, NA, NA))
+  }
+}
+
+# Parse the ANN field for each variant to include HGVS.p information
+genes_and_variant_types  <- t(sapply(ann_info, parse_ann)) # transpose to make each row contain the gene, variant type, and HGVS.p
+
+# Modify the data frame creation to include HGVS.p information
+df_chromPOS_to_gene_variant  <- data.frame(
+  CHROM = chrom, 
+  POS = pos, 
+  Gene = genes_and_variant_types [,1], 
+  Variant_Type = genes_and_variant_types [,2],
+  Variant_Effect = genes_and_variant_types [,3] # Include the HGVS.p information
+)
+
+df_chromPOS_to_gene_variant 
+
+df_chromPOS_to_gene_variant =  df_chromPOS_to_gene_variant %>% 
+  # we do not need to print the effect of synonymous_variant as it is the same as the reference
+  mutate(Variant_Effect = if_else(Variant_Type == "synonymous_variant", "", Variant_Effect)) %>% 
+  # replace those values as empty cells have problem in saving as word file
+ mutate(Variant_Effect = if_else(Variant_Effect == "", "-", Variant_Effect))
+df_chromPOS_to_gene_variant
+# genes_and_variant_types <- t(sapply(ann_info, parse_ann)) # transpose to make each gene-variant pair a row
+# 
+# # Create a dataframe with the chromosome, position, gene name, and variant type
+# df_chromPOS_to_gene_variant <- data.frame(CHROM = chrom, POS = pos, Gene = genes_and_variant_types[,1], VARIANT_TYPE = genes_and_variant_types[,2])
+# df_chromPOS_to_gene_variant
+```
+
+
+## Assign gene name to assoc file
+```{r}
+assoc_file = read.table(here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.assoc.logistic"),
+                        header = T)
+assoc_file
+assoc_file = assoc_file %>% 
+  mutate(BP = as.character(BP),
+         CHR = as.character(CHR)) %>% 
+  filter(TEST == "ADD")
+  
+assoc_file
+```
+
+# merge
+```{r}
+assoc_file_df_chromPOS_to_gene_variant =  inner_join(assoc_file, df_chromPOS_to_gene_variant,
+                                             by = c("CHR" = "CHROM", "BP" = "POS"))
+assoc_file_df_chromPOS_to_gene_variant
+
+assoc_file_df_chromPOS_to_gene_variant_adjP = assoc_file_df_chromPOS_to_gene_variant %>% 
+  mutate(p_BH = p.adjust(P, method = "BH"),
+         p_bonferroni = p.adjust(P, method = "bonferroni") ) %>% 
+  arrange(p_bonferroni) %>% 
+  mutate(BP= as.numeric(BP))
+assoc_file_df_chromPOS_to_gene_variant_adjP
+```
+
+```{r}
+# assoc_file_df_chromPOS_to_gene_variant_adjP_2= assoc_file_df_chromPOS_to_gene_variant_adjP %>% 
+#   # scientific notation for  the values where there are more than 3 0s after the decimal and 
+#     mutate_if(is.numeric, ~ ifelse(str_detect(sprintf("%.5f", .), "^0\\.000"), formatC(., format = "e", digits = 3), .)) 
+# 
+# assoc_file_df_chromPOS_to_gene_variant_adjP_2
+
+
+```
+
+
+
+```{r}
+assoc_file_df_chromPOS_to_gene_variant_adjP_3 = assoc_file_df_chromPOS_to_gene_variant_adjP %>% 
+  filter(p_bonferroni < 0.05) %>% 
+  arrange(Gene) %>% 
+  mutate(Location_GRCh38 = paste0("chr", CHR, ":", BP),
+         # Allele_frq_ECC = F_A,
+         # Allele_frq_CF = F_U,
+         Effect_allele = A1) %>% 
+  mutate(OR = ifelse(OR < 0.001, "<0.001", formatC(OR, format = "f", digits = 3)),
+         # Allele_frq_ECC = ifelse(Allele_frq_ECC < 0.001, "<0.001", formatC(Allele_frq_ECC, format = "f", digits = 3)),
+         # Allele_frq_CF = ifelse(Allele_frq_CF < 0.001, "<0.001", formatC(Allele_frq_CF, format = "f", digits = 3)),
+         P = formatC(P, format = "e", digits = 2),
+         p_bonferroni = formatC(p_bonferroni, format = "e", digits = 2)  ) %>% 
+  dplyr::select(Gene, SNP, Location_GRCh38, Effect_allele,  STAT, P, OR, p_bonferroni, Variant_Type,Variant_Effect) #Allele_frq_ECC, Allele_frq_CF,
+assoc_file_df_chromPOS_to_gene_variant_adjP_3
+```
+
+```{r}
+Vivianne_identified_SNPs = c("rs111819661", "rs13306638", "rs145781170", "rs1570867", "rs17697262", "rs2227264", "rs2234001", "rs2234002", "rs2270009", "rs2273275", "rs2274329", "rs2274330", "rs35195910", "rs586965", "rs609805", "rs765007", "rs910556")
+
+```
+
+
+
+```{r}
+
+# Order your data frame by GENE
+assoc_file_df_chromPOS_to_gene_variant_adjP_4 <- assoc_file_df_chromPOS_to_gene_variant_adjP_3 %>%
+  arrange(Gene) %>% 
+  select(-STAT, -P, -OR)
+
+# Create a vector
+column_names <- c("Gene", "SNP", "Location_GRCh38", "Effect_allele",  "p_bonferroni", "Variant_Type", "Variant_Effect") #"Allele_frq_ECC", "Allele_frq_CF",
+# Define the width of each column
+column_widths <- c(1, 1, 1.5, 0.5, 1, 2, 1)
+
+# Create the flextable
+ft <- flextable::regulartable(assoc_file_df_chromPOS_to_gene_variant_adjP_4) %>% 
+  flextable::autofit() %>% 
+  flextable::width(., j = column_names, width = column_widths , unit = "in")
+
+# Determine which rows are the last occurrence of each Gene to apply bottom border
+last_occurrence <- !duplicated(assoc_file_df_chromPOS_to_gene_variant_adjP_4$Gene, fromLast = TRUE)
+ft <- flextable::border(ft, part = "body", border.bottom = officer::fp_border(color = "black"), i = which(last_occurrence))
+
+# Define rows to highlight based on SNP matching
+highlight_rows <- assoc_file_df_chromPOS_to_gene_variant_adjP_4$SNP %in% Vivianne_identified_SNPs
+
+# Apply background color to rows where SNP matches the highlight vector
+# This step is adjusted to loop over rows for conditional formatting
+for(i in seq_len(nrow(assoc_file_df_chromPOS_to_gene_variant_adjP_4))) {
+  if(highlight_rows[i]) {
+    ft <- flextable::bg(ft, i = i, j = "SNP", bg = "yellow")
+  }
+}
+
+# Apply font size
+ft <- flextable::fontsize(ft, size = 8, part = "all")
+
+# Merge cells vertically in the Gene column
+ft <- flextable::merge_v(ft, j = "Gene")
+
+# Add the FlexTable to a Word document in landscape orientation
+doc <- officer::read_docx() %>%
+  flextable::body_add_flextable(value = ft, split = TRUE) %>%
+  officer::body_end_section_landscape()
+
+# Save the Word document
+print(doc,
+      target = here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_logistic_w_covariates_Padj.docx"))
+
+```
+
+
+
+
+
+
+
+
+
