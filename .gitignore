@@ -36,3 +36,6 @@ Fastqc
 *.lqual
 *.lasso
 *.txt
+*.pdf
+*.png
+*.linear

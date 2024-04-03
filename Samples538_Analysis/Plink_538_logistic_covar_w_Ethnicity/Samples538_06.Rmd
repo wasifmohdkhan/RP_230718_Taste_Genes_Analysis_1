@@ -125,8 +125,8 @@ snpEff \
 ```{r}
 
 # Read VCF file
-vcf <- read.vcfR(here("Samples538_Analysis/Plink_538_logistic_covar_w_Ethnicity/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf"))
-
+vcf <- vcfR::read.vcfR(here("Samples538_Analysis/Plink_538_logistic_covar_w_Ethnicity/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf"))
+vcf
 
 # Extract chromosome and position
 chrom <- vcf@fix[,1]

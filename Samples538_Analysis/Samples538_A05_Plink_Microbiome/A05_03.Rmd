@@ -1,0 +1,378 @@
+---
+title: "538 Plink analysis lasso microbiome with covariates Padj BH"
+output: html_document
+date: "2024-03-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+rm(list = ls())
+```
+
+# Load libraries
+```{r}
+library(VariantAnnotation)
+library(tidyverse)
+library(here)
+
+```
+# create plink files
+
+```{bash, eval=FALSE}
+conda activate Plink_env
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A05_Plink_Microbiome
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A05_Plink_Microbiome
+
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+inupt_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/
+
+plink \
+--vcf ${inupt_dir}/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf \
+--double-id \
+--make-bed \
+--keep-allele-order \
+--make-pheno ${metadata_dir}/Samples538_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples538_Combined_Phenotype_with_sex_info.txt \
+--recode \
+--out ./Samples538_55gene_Plink
+```
+
+# plink logistic association
+
+```{bash, eval=FALSE}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A05_Plink_Microbiome
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+
+
+plink \
+--file ./Samples538_55gene_Plink \
+--geno 0.5 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.001 \
+--lasso 0.5 \
+--ci 0.95 \
+--covar ${metadata_dir}/Samples538_Combined_covariates.txt \
+--covar-name Age,Sex,SEFI_score \
+--allow-no-sex \
+--out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
+```
+
+# plink lasso association for microbiome
+
+```{bash, eval=FALSE}
+conda activate Plink_env
+
+  
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A05_Plink_Microbiome
+mkdir -p ./Microbiome_assoc_lasso_output
+
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+phenotype_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Microbiome538_files/
+
+
+plink \
+--file ./Samples538_55gene_Plink \
+--geno 0.5 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.001 \
+--lasso 0.5 \
+--ci 0.95 \
+--pheno ${phenotype_dir}/Maaslin2_16S_ITS_DA_normalized_features.txt \
+--all-pheno \
+--covar ${metadata_dir}/Samples538_Combined_covariates.txt \
+--covar-name Age,Sex,SEFI_score \
+--allow-no-sex \
+--out ./Microbiome_assoc_lasso_output/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
+
+```
+
+
+
+BH correction in the assoc.logistic file
+## Assign gene name to assoc file
+
+```{r}
+assoc_file = read.table(here("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.lasso"),
+                        header = T)
+assoc_file = assoc_file %>% 
+  mutate(CHR = as.character(CHR)) 
+assoc_file
+# assoc_file_p_BH_sel = assoc_file %>% 
+#   mutate( BP = as.character(BP),
+#          CHR = as.character(CHR)) %>% 
+#   filter(TEST == "ADD") %>% 
+#   mutate(p_BH = p.adjust(P, method = "BH") ) %>% 
+#   arrange(p_BH) %>% 
+#   filter(p_BH < 0.05)
+#   
+# assoc_file_p_BH_sel %>% arrange(CHR)
+```
+
+```{r}
+# # Load  VCF file
+# vcf <- VariantAnnotation::readVcf(here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf"))
+# 
+# 
+# # Filter the VCF file
+# filtered_vcf <- vcf[which(rowRanges(vcf) %in% 
+#                     GRanges(seqnames = assoc_file_p_BH_sel$CHR,
+#                             ranges = IRanges(start = assoc_file_p_BH_sel$BP, assoc_file_p_BH_sel$BP)))]
+# filtered_vcf %>% rowRanges
+# # Write the filtered VCF to a new file
+# writeVcf(filtered_vcf,
+#          here("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Samples538_55genes_plink_logistic_filtered.vcf"))
+
+```
+
+# code to select the p-adjusted significant associations
+
+```{r}
+# import phenotype file to get a vector of all the species
+Maaslin2_16S_ITS_features = read.table(here("Samples538_Analysis/Microbiome538_files/Maaslin2_16S_ITS_DA_normalized_features.txt"),
+                                       header = T)
+Maaslin2_16S_ITS_features = Maaslin2_16S_ITS_features %>% 
+  dplyr::select(-FID, -IID) %>% 
+  names()
+Maaslin2_16S_ITS_features
+```
+
+```{r}
+all_filtered_snps <- list() # Initialize list to store data frames from each file
+
+for(feature in Maaslin2_16S_ITS_features) {
+  # Construct file name
+  file_name <- here(
+    paste0("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Microbiome_assoc_lasso_output/",
+           "Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.", feature, ".lasso"))
+  # file_name = here("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Microbiome_assoc_lasso_output/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.F_Cladosporium_herbarum.assoc.lasso")
+  # Read in the file
+  df <- read.table(file_name, header = TRUE)
+  
+
+  df_filtered <- df %>%
+    mutate(feature = feature,
+         CHR = as.character(CHR))
+  df_filtered_2 = df_filtered %>% 
+    semi_join(assoc_file, by = c("SNP", "A1"))
+  
+  # Store the filtered and annotated data frame in the list
+  all_filtered_snps[[feature]] <- df_filtered_2
+}
+
+# Combine all data frames into one
+Sample538_16S_ITS_lasso_ECC_assoc <- bind_rows(all_filtered_snps)
+Sample538_16S_ITS_lasso_ECC_assoc
+```
+# add genes to the plink assoc file and 
+
+```{r}
+
+# Read VCF file
+vcf <- vcfR::read.vcfR(here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf"))
+vcf
+
+# Extract chromosome and position
+chrom <- vcf@fix[,1]
+pos <- vcf@fix[,2]
+id <- vcf@fix[,3]
+alt <- vcf@fix[,5]
+# Extract the INFO column
+info <- vcf@fix[,8]
+
+# Extract the ANN information from INFO by removing the 'ANN=' prefix
+ann_info <- gsub("^ANN=", "", info)
+
+# Each element of 'ann_info' can have multiple annotations (separated by comma),
+# and each annotation has multiple sub-fields (separated by '|').
+
+# Function to parse a single annotation
+# Updated parse_ann function from the previous correction
+parse_ann <- function(ann) {
+  # Split the annotation into sub-fields
+  sub_fields <- strsplit(ann, "\\|")[[1]]
+  
+  # Check if there are enough sub-fields to extract the desired information
+  if (length(sub_fields) >= 11) {
+    gene_name <- sub_fields[4]
+    variant_type <- sub_fields[2]
+    hgvs_p <- sub_fields[11] # Extract HGVS.p information
+    return(c(gene_name, variant_type, hgvs_p))
+  } else {
+    return(c(NA, NA, NA))
+  }
+}
+
+# Parse the ANN field for each variant to include HGVS.p information
+genes_and_variant_types  <- t(sapply(ann_info, parse_ann)) # transpose to make each row contain the gene, variant type, and HGVS.p
+
+# Modify the data frame creation to include HGVS.p information
+df_chromPOS_to_gene_variant  <- data.frame(
+  CHROM = chrom, 
+  POS = pos,
+  SNP = id,
+  A1 = alt,
+  Gene = genes_and_variant_types [,1], 
+  Variant_Type = genes_and_variant_types [,2],
+  Variant_Effect = genes_and_variant_types [,3] # Include the HGVS.p information
+)
+
+df_chromPOS_to_gene_variant 
+
+df_chromPOS_to_gene_variant =  df_chromPOS_to_gene_variant %>% 
+  # we do not need to print the effect of synonymous_variant as it is the same as the reference
+  mutate(Variant_Effect = if_else(Variant_Type == "synonymous_variant", "", Variant_Effect)) %>% 
+  # replace those values as empty cells have problem in saving as word file
+ mutate(Variant_Effect = if_else(Variant_Effect == "", "-", Variant_Effect),
+        CHROM = gsub("chr", "", CHROM))
+df_chromPOS_to_gene_variant
+# genes_and_variant_types <- t(sapply(ann_info, parse_ann)) # transpose to make each gene-variant pair a row
+# 
+# # Create a dataframe with the chromosome, position, gene name, and variant type
+# df_chromPOS_to_gene_variant <- data.frame(CHROM = chrom, POS = pos, Gene = genes_and_variant_types[,1], VARIANT_TYPE = genes_and_variant_types[,2])
+# df_chromPOS_to_gene_variant
+```
+
+
+## Assign gene name to microbiome assoc file
+# merge
+```{r}
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant =  inner_join(Sample538_16S_ITS_lasso_ECC_assoc, df_chromPOS_to_gene_variant,
+                                             by = c( "SNP" = "SNP", "A1" = "A1", "CHR" = "CHROM"))
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant
+
+```
+```{r}
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 = Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant %>% 
+  arrange(feature) %>% 
+  mutate(Location_GRCh38 = paste0("chr", CHR, ":", POS),
+         # Allele_frq_ECC = F_A,
+         # Allele_frq_CF = F_U,
+         Effect_allele = A1) %>% 
+  mutate(
+    # OR = ifelse(OR < 0.001, "<0.001", formatC(OR, format = "f", digits = 3)),
+         # Allele_frq_ECC = ifelse(Allele_frq_ECC < 0.001, "<0.001", formatC(Allele_frq_ECC, format = "f", digits = 3)),
+         # Allele_frq_CF = ifelse(Allele_frq_CF < 0.001, "<0.001", formatC(Allele_frq_CF, format = "f", digits = 3)),
+         # P = formatC(P, format = "e", digits = 2),
+         # p_BH = formatC(p_BH, format = "e", digits = 2)  
+         ) %>% 
+  dplyr::select( Gene, feature, SNP, Location_GRCh38, Effect_allele, Variant_Type,Variant_Effect,
+                # STAT, P, OR, p_BH
+                ) #Allele_frq_ECC, Allele_frq_CF,
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3
+```
+
+
+```{r}
+Vivianne_identified_SNPs = c("rs111819661", "rs13306638", "rs145781170", "rs1570867", "rs17697262", "rs2227264", "rs2234001", "rs2234002", "rs2270009", "rs2273275", "rs2274329", "rs2274330", "rs35195910", "rs586965", "rs609805", "rs765007", "rs910556")
+
+```
+
+
+
+```{r}
+
+# Order your data frame by GENE
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4 <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 %>%
+  arrange(Gene) %>% 
+  relocate(Gene, feature)
+
+# Create a vector
+column_names <- c("feature", "Gene", "SNP", "Location_GRCh38", "Effect_allele", "Variant_Type","Variant_Effect") #"Allele_frq_ECC", "Allele_frq_CF",
+# Define the width of each column
+column_widths <- c(2.2, 1, 1, 1.5, 0.5, 2, 1)
+
+# Create the flextable
+ft <- flextable::regulartable(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4) %>% 
+  flextable::autofit() %>% 
+  flextable::width(., j = column_names, width = column_widths , unit = "in")
+
+# Determine which rows are the last occurrence of each Gene to apply bottom border
+last_occurrence <- !duplicated(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4$Gene, fromLast = TRUE)
+ft <- flextable::border(ft, part = "body", border.bottom = officer::fp_border(color = "black"), i = which(last_occurrence))
+
+# Define rows to highlight based on SNP matching
+highlight_rows <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4$SNP %in% Vivianne_identified_SNPs
+
+# Apply background color to rows where SNP matches the highlight vector
+# This step is adjusted to loop over rows for conditional formatting
+for(i in seq_len(nrow(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4))) {
+  if(highlight_rows[i]) {
+    ft <- flextable::bg(ft, i = i, j = "SNP", bg = "yellow")
+  }
+}
+
+# Apply font size
+ft <- flextable::fontsize(ft, size = 8, part = "all")
+
+# Merge cells vertically in the Gene column
+ft <- flextable::merge_v(ft, j = "Gene")
+
+# Add the FlexTable to a Word document in landscape orientation
+doc <- officer::read_docx() %>%
+  flextable::body_add_flextable(value = ft, split = TRUE) %>%
+  officer::body_end_section_landscape()
+
+# Save the Word document
+print(doc,
+      target = here("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Sample538_16S_ITS_lasso_ECC_assoc_w_covariates_byGENE.docx"))
+
+```
+
+# save the same by feature
+```{r}
+
+# Order your data frame by GENE
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4 <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 %>%
+  arrange(Gene) %>% 
+  dplyr::select(-STAT, -P)
+
+# Create a vector
+column_names <- c("feature", "Gene", "SNP", "Location_GRCh38", "Effect_allele", "Variant_Type","Variant_Effect") #"Allele_frq_ECC", "Allele_frq_CF",
+# Define the width of each column
+column_widths <- c(2.2, 1, 1, 1.5, 0.5, 2, 1)
+
+# Create the flextable
+ft <- flextable::regulartable(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4) %>% 
+  flextable::autofit() %>% 
+  flextable::width(., j = column_names, width = column_widths , unit = "in")
+
+# Determine which rows are the last occurrence of each Gene to apply bottom border
+last_occurrence <- !duplicated(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4$Gene, fromLast = TRUE)
+ft <- flextable::border(ft, part = "body", border.bottom = officer::fp_border(color = "black"), i = which(last_occurrence))
+
+# Define rows to highlight based on SNP matching
+highlight_rows <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4$SNP %in% Vivianne_identified_SNPs
+
+# Apply background color to rows where SNP matches the highlight vector
+# This step is adjusted to loop over rows for conditional formatting
+for(i in seq_len(nrow(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4))) {
+  if(highlight_rows[i]) {
+    ft <- flextable::bg(ft, i = i, j = "SNP", bg = "yellow")
+  }
+}
+
+# Apply font size
+ft <- flextable::fontsize(ft, size = 8, part = "all")
+
+# Merge cells vertically in the Gene column
+ft <- flextable::merge_v(ft, j = "Gene")
+
+# Add the FlexTable to a Word document in landscape orientation
+doc <- officer::read_docx() %>%
+  flextable::body_add_flextable(value = ft, split = TRUE) %>%
+  officer::body_end_section_landscape()
+
+# Save the Word document
+print(doc,
+      target = here("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Sample538_16S_ITS_lasso_ECC_assoc_w_covariates_Padj_BH.docx"))
+
+```
+

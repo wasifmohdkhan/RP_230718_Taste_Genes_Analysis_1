@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-```{bash}
+```{bash, eval=FALSE}
 #bcftools annotate requires bgzipped files
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
 
@@ -31,7 +31,7 @@ bcftools view -H Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf | wc -l
 ```
 
 
-```{bash}
+```{bash,eval=FALSE}
 mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_VCFqual
 
 ## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
@@ -71,7 +71,7 @@ a + theme_light() + xlim(0, 100)
 ```{r}
 var_depth <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqual/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf.ldepth.mean"),
                         delim = "\t", col_names = c("chr", "pos", "mean_depth", "var_depth"), skip = 1)
-a <- ggplot(var_depth, aes(mean_depth)) + geom_de nsity(fill = "dodgerblue1", colour = "black", alpha = 0.3)
+a <- ggplot(var_depth, aes(mean_depth)) + geom_density(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
 
 summary(var_depth$mean_depth)
@@ -129,7 +129,7 @@ a + theme_light()
 
 
 # Applying filters to the VCF
-```{bash}
+```{bash, eval=FALSE}
 <!-- vcftools defults -->
 <!--          --maf 0 -->
 <!--         --maxDP 150 -->
@@ -141,13 +141,13 @@ a + theme_light()
         
 cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
 root_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
-VCF_IN=$root_dir/Samples538_55genes_GenotypeGVCFs_SNPIDs.vcf
+VCF_IN=$root_dir/Samples538_55genes_GenotypeGVCFs_SNPIDs_anno.vcf
 VCF_OUT=$root_dir/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf
 
 # set filters
 MAF=0.00
 MAX_MISS=0.5 # default 0.5, somewhat counter-intuitive 0 is totally missing, 1 is none missing
-QUAL=30 # default 30
+QUAL=25 # default 30
 MIN_DEPTH=5 # default 5
 MAX_DEPTH=150 # # default 150
 
@@ -171,7 +171,7 @@ echo "number of SNPs after the above filtering: "
 bcftools view -H $VCF_OUT | wc -l
 ```
 
-```{bash}
+```{bash, eval=FALSE}
 mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/Samples538_VCFqual
 
 ## Calculate average sampling depth per samples: Use file before annotation and filter because the filtered file doesn't have the SD info:
@@ -266,3 +266,36 @@ ind_het <- read_delim(here("Samples538_Analysis/Samples538_GATK/Samples538_VCFqu
 a <- ggplot(ind_het, aes(f)) + geom_histogram(fill = "dodgerblue1", colour = "black", alpha = 0.3)
 a + theme_light()
 ```
+
+
+# annotate the VCF with gene names
+```{bash, eval=FALSE}
+conda activate SnpEff_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+
+snpEff \
+-v hg38 \
+./Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf> \
+./Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf
+```
+
+# fill empty SNP IDs with chr and BP
+When we read a vcf using VariantAnnotation::readVcf it automatically fills the SNP IDs with chr and BP. So that file can be directly saved as a vcf file.
+This not working as it removes the * given in the ALT column
+```{r}
+# vcf <- VariantAnnotation::readVcf(here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf"))
+# # some IDs are chr1:1285974_C/*	C	,A which gives and error due to * in the ID
+# 
+# # to replace them
+# rownames(vcf) <- gsub(pattern = "\\*", replacement = "", x = rownames(vcf))
+# VariantAnnotation::writeVcf(vcf, file = here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDfilled.vcf"))
+
+```
+```{bash, eval=FALSE}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+awk 'BEGIN{FS=OFS="\t"} !/^#/ {if($3 == ".") $3 = $1"_"$2} {print}' Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf \
+> Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf
+```
+
+

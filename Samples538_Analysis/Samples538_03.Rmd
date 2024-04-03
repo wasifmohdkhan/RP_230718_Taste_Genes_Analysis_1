@@ -1,0 +1,469 @@
+---
+title: "Maaslin2 on 16S and ITS with confounders Species"
+output: html_document
+date: "2023-10-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+rm(list = ls())
+```
+
+```{r}
+library(here)
+library(tidyverse)
+library(microbiome)
+library(microbiomeMarker)
+library(phyloseq)
+# library(pheatmap)
+# library(RColorBrewer)
+# # Load the package
+# library(ComplexHeatmap)
+# library(circlize)
+library(Maaslin2)
+# library(ggraph)
+# library(NetCoMi)
+# library(ggraph)
+# library(igraph)
+# library(tidygraph)
+```
+
+```{r}
+# Define the path where the new folder should be created
+base_path <- here("Samples538_Analysis")
+
+# Define the name of the new folder
+new_folder_name <- "Microbiome538_files"
+
+# Full path for the new folder
+new_folder_path <- file.path(base_path, new_folder_name)
+
+# Create the new folder if it does not exist
+if (!dir.exists(new_folder_path)) {
+  dir.create(new_folder_path)
+  message("Folder '", new_folder_name, "' has been created at: ", base_path)
+} else {
+  message("Folder '", new_folder_name, "' already exists at: ", base_path)
+}
+```
+## copy the 16S and ITS phyloseq objects to the new folder
+```{r}
+# Define the path to the folder containing the phyloseq objects
+phyloseq_path_16S <- here("../RP_240306_Plaque538_samples/Plaque538_Combined/Plaque538_16S/Plaque538_16S_A2_pseq_objects/Plaque538_16S_AllOTU_5perc_ps_17_vars_240306.Rds")
+
+phyloseq_path_ITS <- here("../RP_240306_Plaque538_samples/Plaque538_Combined/Plaque538_ITS/Plaque538_ITS_A2_pseq_objects/Plaque538_ITS_AllOTU_5perc_ps_17_vars_240306.Rds")
+
+# Define the destination path
+new_folder_path <- here("Samples538_Analysis/Microbiome538_files")
+
+# Function to copy a file if it doesn't already exist in the destination
+copy_if_not_exists <- function(source_path, destination_path) {
+  destination_file_path <- file.path(destination_path, basename(source_path))
+  if (!file.exists(destination_file_path)) {
+    file.copy(source_path, destination_file_path)
+    message("Copied: ", basename(source_path))
+  } else {
+    message("File already exists: ", basename(source_path))
+  }
+}
+
+# Copy the phyloseq object files to the new folder, avoiding duplicates
+copy_if_not_exists(phyloseq_path_16S, new_folder_path)
+copy_if_not_exists(phyloseq_path_ITS, new_folder_path)
+
+# Check if the operation was successful
+list.files(new_folder_path)
+```
+
+### read data
+
+```{r}
+Plaque538_16S_AllOTU_5perc_ps =   readRDS(here("Samples538_Analysis/Microbiome538_files/Plaque538_16S_AllOTU_5perc_ps_17_vars_240306.Rds"))
+Plaque538_16S_AllOTU_5perc_ps
+
+## This is a good to remove the bad_empty names eg. "Unknown" also, if required
+## the aggregate_taxa only keeps the names at a particular tax-level eg Species with prerix "g__"
+Plaque538_16S_Species_ps = 
+  microbiomeMarker::aggregate_taxa( Plaque538_16S_AllOTU_5perc_ps, level = "Species", verbose = FALSE) %>%
+  phyloseq::tax_glom(
+  .,
+  taxrank = "Species",
+  bad_empty = c(NA, "", " ", "\t", "__") ) 
+Plaque538_16S_Species_ps
+```
+
+```{r}
+Plaque538_16S_Species_ps %>% otu_table() %>% as.data.frame()
+```
+```{r}
+Plaque538_16S_Species_ps %>% tax_table() %>% as.data.frame()
+```
+```{r}
+
+Plaque538_16S_Species_ps %>% tax_table()  %>% as.data.frame()
+Plaque538_16S_Species_ps %>% otu_table() %>% as.data.frame()
+
+```
+
+# replace special characters in the rownames of the otu_table and the Species column of the tax_table
+This is required for Maaslin2 to work properly as Maaslin2 changes the special characters to .
+```{r}
+# Your custom function to replace characters
+replace_chars <- function(names) {
+  gsub("\\(|\\)|\\[|\\]|-|&", "", names)
+}
+
+# Extracting components from the phyloseq object
+Plaque538_16S_Species_ps_otu_table <- otu_table(Plaque538_16S_Species_ps)
+Plaque538_16S_Species_ps_tax_table <- tax_table(Plaque538_16S_Species_ps)
+Plaque538_16S_Species_ps_sample_data <- sample_data(Plaque538_16S_Species_ps)
+
+# Apply the replace_chars function to the row names of the OTU table
+rownames(Plaque538_16S_Species_ps_otu_table) <- replace_chars(rownames(Plaque538_16S_Species_ps_otu_table))
+
+# Apply the replace_chars function to all columns in the tax_table, including the rownames
+tax_table_df <- as.data.frame(Plaque538_16S_Species_ps_tax_table) # Convert tax_table to a data frame
+tax_table_df[] <- lapply(tax_table_df, replace_chars) # Apply function to all columns
+rownames(tax_table_df) <- replace_chars(rownames(tax_table_df)) # Apply function to row names separately
+
+# Convert back to Taxonomy Table object
+Plaque538_16S_Species_ps_tax_table <- tax_table(as.matrix(tax_table_df))
+
+# Combine everything back into a new phyloseq object
+Plaque538_16S_Species_ps_modified <- phyloseq(Plaque538_16S_Species_ps_otu_table,
+                                              Plaque538_16S_Species_ps_tax_table,
+                                              Plaque538_16S_Species_ps_sample_data)
+
+# The phyloseq object now has the modified taxonomy table with replaced characters in all columns and rownames
+Plaque538_16S_Species_ps <- Plaque538_16S_Species_ps_modified
+Plaque538_16S_Species_ps
+```
+
+```{r}
+# 
+Plaque538_16S_Species_ps_otu_table %>% as.data.frame()
+Plaque538_16S_Species_ps_tax_table  %>% as.data.frame()
+Plaque538_16S_Species_ps %>% otu_table() %>% as.data.frame()
+
+```
+
+
+
+
+```{r}
+# Extract and modify taxa names
+new_taxa_names_16S_Species <- gsub("s__", "B_", taxa_names(Plaque538_16S_Species_ps))
+
+# Update taxa names in-place in the phyloseq object
+taxa_names(Plaque538_16S_Species_ps) <- new_taxa_names_16S_Species
+
+# Confirm that the 's__' prefix has been removed
+head(taxa_names(otu_table(Plaque538_16S_Species_ps)))
+
+```
+### Normalize in Microbiomemarker
+
+```{r}
+## AFter filtering some of the samples have all OTUs 0, hence it is important to add one to mitigate this problem
+Plaque538_16S_Species_ps_CPM =
+  phyloseq::prune_samples(sample_sums(Plaque538_16S_Species_ps) != 0, Plaque538_16S_Species_ps) %>% 
+  microbiomeMarker::normalize (., "CPM")
+
+Plaque538_16S_Species_ps_CPM
+
+# Plaque538_16S_Species_ps_CLR = Plaque538_16S_Species_ps_CPM %>%
+#   microbiomeMarker::normalize(., "CLR")
+# Plaque538_16S_Species_ps_CLR
+```
+
+### Import data
+
+```{r}
+Plaque538_ITS_AllOTU_5perc_ps =   readRDS(here("Samples538_Analysis/Microbiome538_files/Plaque538_ITS_AllOTU_5perc_ps_17_vars_240306.Rds"))
+Plaque538_ITS_AllOTU_5perc_ps
+
+## This is a good to remove the bad_empty names eg. "Unknown" also, if required
+## the aggregate_taxa only keeps the names at a particular tax-level eg Species with prerix "g__"
+Plaque538_ITS_Species_ps = 
+  microbiomeMarker::aggregate_taxa( Plaque538_ITS_AllOTU_5perc_ps, level = "Species", verbose = FALSE) %>%
+  phyloseq::tax_glom(
+  .,
+  taxrank = "Species",
+  bad_empty = c(NA, "", " ", "\t", "__") ) 
+Plaque538_ITS_Species_ps
+```
+# replace special characters in the rownames of the otu_table and the Species column of the tax_table
+This is required for Maaslin2 to work properly as Maaslin2 changes the special characters to .
+```{r}
+# Your custom function to replace characters
+replace_chars <- function(names) {
+  gsub("\\(|\\)|\\[|\\]|-|&", "", names)
+}
+
+# Extracting components from the phyloseq object
+Plaque538_ITS_Species_ps_otu_table <- otu_table(Plaque538_ITS_Species_ps)
+Plaque538_ITS_Species_ps_tax_table <- tax_table(Plaque538_ITS_Species_ps)
+Plaque538_ITS_Species_ps_sample_data <- sample_data(Plaque538_ITS_Species_ps)
+
+# Apply the replace_chars function to the row names of the OTU table
+rownames(Plaque538_ITS_Species_ps_otu_table) <- replace_chars(rownames(Plaque538_ITS_Species_ps_otu_table))
+
+# Apply the replace_chars function to all columns in the tax_table, including the rownames
+tax_table_df <- as.data.frame(Plaque538_ITS_Species_ps_tax_table) # Convert tax_table to a data frame
+tax_table_df[] <- lapply(tax_table_df, replace_chars) # Apply function to all columns
+rownames(tax_table_df) <- replace_chars(rownames(tax_table_df)) # Apply function to row names separately
+
+# Convert back to Taxonomy Table object
+Plaque538_ITS_Species_ps_tax_table <- tax_table(as.matrix(tax_table_df))
+
+# Combine everything back into a new phyloseq object
+Plaque538_ITS_Species_ps_modified <- phyloseq(Plaque538_ITS_Species_ps_otu_table,
+                                              Plaque538_ITS_Species_ps_tax_table,
+                                              Plaque538_ITS_Species_ps_sample_data)
+
+# The phyloseq object now has the modified taxonomy table with replaced characters in all columns and rownames
+Plaque538_ITS_Species_ps <- Plaque538_ITS_Species_ps_modified
+Plaque538_ITS_Species_ps
+```
+
+```{r}
+# Extract and modify taxa names
+new_taxa_names_ITS_Species <- gsub("s__", "F_", taxa_names(Plaque538_ITS_Species_ps))
+
+# Update taxa names in-place in the phyloseq object
+taxa_names(Plaque538_ITS_Species_ps) <- new_taxa_names_ITS_Species
+
+# Confirm that the 's__' prefix has been removed
+otu_table(Plaque538_ITS_Species_ps) %>% as.data.frame()
+```
+
+
+### Normalize in Microbiomemarker
+
+```{r}
+## AFter filtering some of the samples have all OTUs 0, hence it is important to add one to mitigate this problem
+Plaque538_ITS_Species_ps_CPM =
+  phyloseq::prune_samples(sample_sums(Plaque538_ITS_Species_ps) != 0, Plaque538_ITS_Species_ps) %>% 
+  microbiomeMarker::normalize (., "CPM")
+
+Plaque538_ITS_Species_ps_CPM
+
+# Plaque538_ITS_Species_ps_CLR = Plaque538_ITS_Species_ps_CPM %>% 
+#   microbiomeMarker::normalize (., "CLR")
+# Plaque538_ITS_Species_ps_CLR
+```
+
+
+## Remove the variables not required from the sample data
+```{r}
+# remove the variables not required
+variables_to_remove <- c("Child_overall_health", "Material_depr_score")
+
+
+Plaque538_16S_Species_ps_CPM@sam_data <- 
+  Plaque538_16S_Species_ps_CPM@sam_data[, !(colnames(Plaque538_16S_Species_ps_CPM@sam_data) %in% variables_to_remove)]
+Plaque538_16S_Species_ps_CPM
+
+Plaque538_ITS_Species_ps_CPM@sam_data <- 
+  Plaque538_ITS_Species_ps_CPM@sam_data[, !(colnames(Plaque538_ITS_Species_ps_CPM@sam_data) %in% variables_to_remove)]
+Plaque538_ITS_Species_ps_CPM
+
+```
+
+## Merge the two phyloseq objects
+```{r}
+# Plaque538_16S_ITS_Species_ps = merge_phyloseq(Plaque538_16S_Species_ps_CPM,Plaque538_ITS_Species_ps_CPM)#,Plaque538_16S_KEGG_ps)
+# Plaque538_16S_ITS_Species_ps
+```
+
+We will apply Maaslin2 separately on 16S and ITS data and later combine the output to get a single heatmap
+
+```{r}
+# confounders = c()
+confounders = c("Sex", "Age", "Urban_status")
+```
+
+
+## Maaslin2 on 16S with confounders
+
+```{r}
+Maaslin2_output_dir_16S = here("Samples538_Analysis/Microbiome538_files/Maaslin2_16S_240401")
+# Check if the directory exists, and create it if it does not
+if (!dir.exists(Maaslin2_output_dir_16S)) {
+  dir.create(Maaslin2_output_dir_16S, recursive = TRUE)
+}
+```
+
+
+```{r message=FALSE}
+# Initialize lists to temporarily hold the data
+list_coef_16S <- list()
+list_qval_16S <- list()
+
+pseq = Plaque538_16S_Species_ps_CPM
+
+
+# Iterate through each variable to run Maaslin2 and filter results
+for(var in c("ECC_status")) {
+#for(var in c("ECC_status", "Child_dental_health")) { # for try
+  # Run Maaslin2 analysis
+  Maaslin2_res <- Maaslin2(input_data = t(otu_table(pseq)),
+         input_metadata = sample_data(pseq) %>% data.frame(),
+         output = Maaslin2_output_dir_16S, # if file error quit sesssion and connect
+         normalization = "CLR",
+         transform = "NONE",
+         fixed_effects =  c(var, confounders),
+         cores = 40,
+         max_significance = 0.05,
+           )
+  
+    # Filter and transform the output data frame
+  filtered_df <- Maaslin2_res$results %>%
+                 data.frame() %>%
+                  rename(OTUs = feature ) %>%
+                 filter(metadata  == var & qval < 0.01) %>%
+                 dplyr::select(OTUs, coef, qval)
+
+  # Rename the coef and qval columns to the current variable
+  filtered_df_coef <- filtered_df %>% dplyr::select(OTUs, coef) %>%
+                     rename(!!var := coef)
+
+  filtered_df_qval <- filtered_df %>% dplyr::select(OTUs, qval) %>%
+                      rename(!!var := qval)
+
+  # Store in lists
+  list_coef_16S[[var]] <- filtered_df_coef
+  list_qval_16S[[var]] <- filtered_df_qval
+}
+
+# Use purrr to merge all data frames in the lists
+final_df_coef_16S <- reduce(list_coef_16S, full_join, by = "OTUs")
+final_df_qval_16S <- reduce(list_qval_16S, full_join, by = "OTUs")
+```
+
+## Maaslin2 on ITS
+
+```{r}
+Maaslin2_output_dir_ITS = here("Samples538_Analysis/Microbiome538_files/Maaslin2_ITS_240401")
+# Check if the directory exists, and create it if it does not
+if (!dir.exists(Maaslin2_output_dir_ITS)) {
+  dir.create(Maaslin2_output_dir_ITS, recursive = TRUE)
+}
+```
+
+```{r}
+# Initialize lists to temporarily hold the data
+list_coef_ITS <- list()
+list_qval_ITS <- list()
+
+pseq = Plaque538_ITS_Species_ps_CPM
+
+
+# Iterate through each variable to run Maaslin2 and filter results
+for(var in c("ECC_status")) {
+#for(var in c("ECC_status", "Child_dental_health")) { # for try
+  # Run Maaslin2 analysis
+  Maaslin2_res <- Maaslin2(input_data = t(otu_table(pseq)),
+         input_metadata = sample_data(pseq) %>% data.frame(),
+         output = Maaslin2_output_dir_ITS, # if file error quit sesssion and connect
+         normalization = "CLR",
+         transform = "NONE",
+         fixed_effects =  c(var, confounders),
+         cores = 40,
+         max_significance = 0.05,
+           )
+  
+    # Filter and transform the output data frame
+  filtered_df <- Maaslin2_res$results %>%
+                 data.frame() %>%
+                  rename(OTUs = feature ) %>%
+                 filter(metadata  == var & qval < 0.01) %>%
+                 dplyr::select(OTUs, coef, qval)
+
+  # Rename the coef and qval columns to the current variable
+  filtered_df_coef <- filtered_df %>% dplyr::select(OTUs, coef) %>%
+                     rename(!!var := coef)
+
+  filtered_df_qval <- filtered_df %>% dplyr::select(OTUs, qval) %>%
+                      rename(!!var := qval)
+
+  # Store in lists
+  list_coef_ITS[[var]] <- filtered_df_coef
+  list_qval_ITS[[var]] <- filtered_df_qval
+}
+
+# Use purrr to merge all data frames in the lists
+final_df_coef_ITS <- reduce(list_coef_ITS, full_join, by = "OTUs")
+final_df_qval_ITS <- reduce(list_qval_ITS, full_join, by = "OTUs")
+
+```
+
+
+## Vector for Maaslin2 identified bacterial and Fungi
+```{r}
+Maaslin2_DA_16S_ITS = c(final_df_coef_16S$OTUs,
+                  final_df_coef_ITS$OTUs)
+
+Maaslin2_DA_16S_ITS
+```
+
+Create phenotype files from the Maaslin2 output
+
+```{r}
+# combine 16S and ITS Maaslin2 output
+Maaslin2_16S_features = read.table(here("Samples538_Analysis/Microbiome538_files/Maaslin2_16S_240401/features/filtered_data_norm_transformed.tsv"),
+                                   sep = "\t", header = TRUE)
+Maaslin2_16S_features
+
+Maaslin2_ITS_features = read.table(here("Samples538_Analysis/Microbiome538_files/Maaslin2_ITS_240401/features/filtered_data_norm_transformed.tsv"),
+                                   sep = "\t", header = TRUE)
+Maaslin2_ITS_features
+
+# combine 16S and ITS Maaslin2 output
+Maaslin2_features_16S_ITS = full_join(Maaslin2_16S_features, Maaslin2_ITS_features,
+                                      by = "feature" )
+Maaslin2_features_16S_ITS[is.na(Maaslin2_features_16S_ITS)] <- 0
+
+Maaslin2_features_16S_ITS
+```
+
+```{r}
+colnames(Maaslin2_features_16S_ITS)
+
+```
+
+```{r}
+sum(is.na(Maaslin2_features_16S_ITS))
+```
+
+## Select the Maaslin2 identified bacterial and Fungi
+```{r}
+Maaslin2_features_16S_ITS_2 = Maaslin2_features_16S_ITS %>%
+  column_to_rownames("feature") %>%
+  select(all_of(Maaslin2_DA_16S_ITS)) %>% 
+  rownames_to_column("FID") %>% 
+  mutate(IID = FID) %>% 
+  relocate(IID, .after = FID)
+Maaslin2_features_16S_ITS_2 
+
+```
+
+```{r}
+Maaslin2_features_16S_ITS_2 %>% colnames()
+```
+
+## Save the Maaslin2 identified bacterial and Fungi
+
+```{r}
+write.table(Maaslin2_features_16S_ITS_2,
+            file = here("Samples538_Analysis/Microbiome538_files/Maaslin2_16S_ITS_DA_normalized_features.txt"),
+            sep = "\t", quote = FALSE, row.names = FALSE)
+```
+
+
+
+
