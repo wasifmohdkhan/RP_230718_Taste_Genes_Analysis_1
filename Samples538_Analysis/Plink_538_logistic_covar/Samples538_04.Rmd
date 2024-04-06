@@ -19,7 +19,7 @@ metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysi
 inupt_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/
 
 plink \
---vcf ${inupt_dir}/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered.vcf \
+--vcf ${inupt_dir}/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf \
 --double-id \
 --make-bed \
 --keep-allele-order \
@@ -32,21 +32,21 @@ plink \
 ### PCA for population stratification
 
 ```{bash}
-conda activate Plink_env
+<!-- conda activate Plink_env -->
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
-metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar -->
+<!-- metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/ -->
 
 
-plink \
---bfile ./Samples538_55gene_Plink \
---geno 0.5 \
---mind 0.05 \
---maf 0.01 \
---not-chr x \
---hwe 0.001 \
---pca 3 \
---out Samples538_55gene_Plink_pca
+<!-- plink \ -->
+<!-- --bfile ./Samples538_55gene_Plink \ -->
+<!-- --geno 0.5 \ -->
+<!-- --mind 0.05 \ -->
+<!-- --maf 0.01 \ -->
+<!-- --not-chr x \ -->
+<!-- --hwe 0.001 \ -->
+<!-- --pca 3 \ -->
+<!-- --out Samples538_55gene_Plink_pca -->
 ```
 
 ## add the output PC1,  PC2, PC3, to the covariate file
@@ -56,19 +56,19 @@ plink \
 
 # plot
 ```{r}
-# Step 1: Read the file
-# Load the file, treating no character as a comment
-pca_data <- read.table(here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_pca.eigenvec"),
-                       header = F, sep = "", comment.char = "#", as.is = TRUE)
-pca_data
-colnames(pca_data) <- c("FID", "IID", "PC1", "PC2", "PC3")
-
-pca_data
-# Proceed with your analysis, for example, plotting PCA results
-ggplot(data = pca_data, aes(x = PC1, y = PC2)) +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "PCA Plot", x = "Principal Component 1 (PC1)", y = "Principal Component 2 (PC2)")
+# # Step 1: Read the file
+# # Load the file, treating no character as a comment
+# pca_data <- read.table(here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_pca.eigenvec"),
+#                        header = F, sep = "", comment.char = "#", as.is = TRUE)
+# pca_data
+# colnames(pca_data) <- c("FID", "IID", "PC1", "PC2", "PC3")
+# 
+# pca_data
+# # Proceed with your analysis, for example, plotting PCA results
+# ggplot(data = pca_data, aes(x = PC1, y = PC2)) +
+#   geom_point() +
+#   theme_minimal() +
+#   labs(title = "PCA Plot", x = "Principal Component 1 (PC1)", y = "Principal Component 2 (PC2)")
 ```
 
 
@@ -89,7 +89,7 @@ plink \
 --logistic \
 --ci 0.95 \
 --covar ${metadata_dir}/Samples538_Combined_covariates.txt \
---covar-name Age,Sex,SEFI_score \
+--covar-name Age,Sex,Urban_status \
 --allow-no-sex \
 --out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
 
@@ -97,16 +97,16 @@ plink \
 
 
 ```{bash, engine.opts='-l'}
-# Activate your conda environment by specifying the full path to the 'activate' script.
-<!-- source /home/wasif_pclab/anaconda3/etc/profile.d/conda.sh -->
-conda activate SnpEff_env
+<!-- # Activate your conda environment by specifying the full path to the 'activate' script. -->
+<!-- <!-- source /home/wasif_pclab/anaconda3/etc/profile.d/conda.sh --> -->
+<!-- conda activate SnpEff_env -->
 
-cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Plink_538_logistic_covar -->
 
-snpEff \
--v hg38 \
-./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.vcf > \
-./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf
+<!-- snpEff \ -->
+<!-- -v hg38 \ -->
+<!-- ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.vcf > \ -->
+<!-- ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf -->
 ```
 
 # add genes to the plink assoc file and 
@@ -114,7 +114,7 @@ snpEff \
 ```{r}
 
 # Read VCF file
-vcf <- read.vcfR(here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_anno.vcf"))
+vcf <- read.vcfR(here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf"))
 
 
 # Extract chromosome and position
@@ -135,7 +135,7 @@ ann_info <- gsub("^ANN=", "", info)
 parse_ann <- function(ann) {
   # Split the annotation into sub-fields
   sub_fields <- strsplit(ann, "\\|")[[1]]
-  
+
   # Check if there are enough sub-fields to extract the desired information
   if (length(sub_fields) >= 11) {
     gene_name <- sub_fields[4]
@@ -152,23 +152,24 @@ genes_and_variant_types  <- t(sapply(ann_info, parse_ann)) # transpose to make e
 
 # Modify the data frame creation to include HGVS.p information
 df_chromPOS_to_gene_variant  <- data.frame(
-  CHROM = chrom, 
-  POS = pos, 
-  Gene = genes_and_variant_types [,1], 
+  CHROM = chrom,
+  POS = pos,
+  Gene = genes_and_variant_types [,1],
   Variant_Type = genes_and_variant_types [,2],
   Variant_Effect = genes_and_variant_types [,3] # Include the HGVS.p information
 )
 
-df_chromPOS_to_gene_variant 
+df_chromPOS_to_gene_variant
 
-df_chromPOS_to_gene_variant =  df_chromPOS_to_gene_variant %>% 
+df_chromPOS_to_gene_variant =  df_chromPOS_to_gene_variant %>%
   # we do not need to print the effect of synonymous_variant as it is the same as the reference
-  mutate(Variant_Effect = if_else(Variant_Type == "synonymous_variant", "", Variant_Effect)) %>% 
+  mutate(Variant_Effect = if_else(Variant_Type == "synonymous_variant", "", Variant_Effect)) %>%
   # replace those values as empty cells have problem in saving as word file
- mutate(Variant_Effect = if_else(Variant_Effect == "", "-", Variant_Effect))
+ mutate(Variant_Effect = if_else(Variant_Effect == "", "-", Variant_Effect)) %>% 
+  mutate(CHROM = gsub("chr", "", CHROM))
 df_chromPOS_to_gene_variant
 # genes_and_variant_types <- t(sapply(ann_info, parse_ann)) # transpose to make each gene-variant pair a row
-# 
+#
 # # Create a dataframe with the chromosome, position, gene name, and variant type
 # df_chromPOS_to_gene_variant <- data.frame(CHROM = chrom, POS = pos, Gene = genes_and_variant_types[,1], VARIANT_TYPE = genes_and_variant_types[,2])
 # df_chromPOS_to_gene_variant
@@ -273,6 +274,7 @@ for(i in seq_len(nrow(assoc_file_df_chromPOS_to_gene_variant_adjP_4))) {
 # Apply font size
 ft <- flextable::fontsize(ft, size = 8, part = "all")
 
+
 # Merge cells vertically in the Gene column
 ft <- flextable::merge_v(ft, j = "Gene")
 
@@ -283,7 +285,7 @@ doc <- officer::read_docx() %>%
 
 # Save the Word document
 print(doc,
-      target = here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_logistic_w_covariates_Padj.docx"))
+      target = here("Samples538_Analysis/Plink_538_logistic_covar/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001_logistic_w_Age_Sex_Urban_status_Padj.docx"))
 
 ```
 

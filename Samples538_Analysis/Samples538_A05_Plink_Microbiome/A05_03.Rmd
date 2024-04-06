@@ -18,7 +18,9 @@ rm(list = ls())
 library(VariantAnnotation)
 library(tidyverse)
 library(here)
-
+library(ComplexHeatmap)
+library(circlize)
+library(tidyr)
 ```
 # create plink files
 
@@ -263,8 +265,8 @@ Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 = Sample538_16S_ITS_lasso_EC
          # P = formatC(P, format = "e", digits = 2),
          # p_BH = formatC(p_BH, format = "e", digits = 2)  
          ) %>% 
-  dplyr::select( Gene, feature, SNP, Location_GRCh38, Effect_allele, Variant_Type,Variant_Effect,
-                # STAT, P, OR, p_BH
+  dplyr::select( Gene, feature, SNP, Location_GRCh38, Effect_allele, Variant_Type,Variant_Effect, EFFECT,
+                 # P, OR, p_BH
                 ) #Allele_frq_ECC, Allele_frq_CF,
 Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3
 ```
@@ -282,6 +284,7 @@ Vivianne_identified_SNPs = c("rs111819661", "rs13306638", "rs145781170", "rs1570
 # Order your data frame by GENE
 Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4 <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 %>%
   arrange(Gene) %>% 
+  dplyr::select(-EFFECT) %>% 
   relocate(Gene, feature)
 
 # Create a vector
@@ -329,50 +332,90 @@ print(doc,
 # save the same by feature
 ```{r}
 
-# Order your data frame by GENE
-Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4 <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 %>%
-  arrange(Gene) %>% 
-  dplyr::select(-STAT, -P)
 
-# Create a vector
-column_names <- c("feature", "Gene", "SNP", "Location_GRCh38", "Effect_allele", "Variant_Type","Variant_Effect") #"Allele_frq_ECC", "Allele_frq_CF",
-# Define the width of each column
-column_widths <- c(2.2, 1, 1, 1.5, 0.5, 2, 1)
 
-# Create the flextable
-ft <- flextable::regulartable(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4) %>% 
-  flextable::autofit() %>% 
-  flextable::width(., j = column_names, width = column_widths , unit = "in")
+```
 
-# Determine which rows are the last occurrence of each Gene to apply bottom border
-last_occurrence <- !duplicated(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4$Gene, fromLast = TRUE)
-ft <- flextable::border(ft, part = "body", border.bottom = officer::fp_border(color = "black"), i = which(last_occurrence))
+# make a complexheatmap for snps and microbiome
+Prepapre the data
 
-# Define rows to highlight based on SNP matching
-highlight_rows <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4$SNP %in% Vivianne_identified_SNPs
+```{r} 
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_5 = Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_3 %>% 
+  dplyr::select( Gene, feature, Location_GRCh38, Variant_Type,EFFECT) %>%
+  mutate(Gene_Location = paste0(Gene, "_", Location_GRCh38)) %>% 
+  dplyr::select(-Gene, -Location_GRCh38) %>% 
+  relocate(Gene_Location, feature, Variant_Type, EFFECT) %>% 
+  arrange(Gene_Location)
+Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_5
+```
+```{r}
+# Convert to wide format for heatmap
+# Pivot data to wide format for heatmap
+heatmap_data <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_5 %>%
+  pivot_wider(names_from = feature, values_from = EFFECT, values_fill = list(EFFECT = 0))
+heatmap_data
 
-# Apply background color to rows where SNP matches the highlight vector
-# This step is adjusted to loop over rows for conditional formatting
-for(i in seq_len(nrow(Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_4))) {
-  if(highlight_rows[i]) {
-    ft <- flextable::bg(ft, i = i, j = "SNP", bg = "yellow")
-  }
-}
+# Convert to matrix
+heatmap_matrix <- heatmap_data  %>% 
+  column_to_rownames("Gene_Location") %>%
+  select(-Variant_Type) %>% 
+  as.matrix()
+heatmap_matrix
+```
+```{r}
+# Create a unique mapping of Gene_Location to Variant_Type
+variant_type_mapping <- Sample538_16S_ITS_lasso_ECC_assoc_to_gene_variant_5 %>% 
+  select(Gene_Location, Variant_Type) %>% 
+  distinct()
+variant_type_mapping
 
-# Apply font size
-ft <- flextable::fontsize(ft, size = 8, part = "all")
+# Ensure the order matches the columns in the heatmap matrix
+variant_types_ordered <- variant_type_mapping$Variant_Type[match(rownames(heatmap_matrix), variant_type_mapping$Gene_Location)]
+variant_types_ordered
+```
 
-# Merge cells vertically in the Gene column
-ft <- flextable::merge_v(ft, j = "Gene")
 
-# Add the FlexTable to a Word document in landscape orientation
-doc <- officer::read_docx() %>%
-  flextable::body_add_flextable(value = ft, split = TRUE) %>%
-  officer::body_end_section_landscape()
+```{r}
+# Create the annotation
+variant_type_annotation <- HeatmapAnnotation(Variant_Type = variant_types_ordered,
+                                             col = list(Variant_Type = c("synonymous_variant" = "blue",
+                                                                         "frameshift_variant" = "red",
+                                                                         "intron_variant" = "green",
+                                                                         "missense_variant" = "purple",
+                                                                         "3_prime_UTR_variant" = "orange",
+                                                                         "splice_region_variant&intron_variant" = "yellow",
+                                                                         "downstream_gene_variant" = "grey")))
+variant_type_annotation
+```
 
-# Save the Word document
-print(doc,
-      target = here("Samples538_Analysis/Samples538_A05_Plink_Microbiome/Sample538_16S_ITS_lasso_ECC_assoc_w_covariates_Padj_BH.docx"))
+```{r}
+Heatmap(t(heatmap_matrix),
+        name = "EFFECT",
+        bottom_annotation = variant_type_annotation,
+        col = colorRamp2(c(-0.1, 0, 0.1), c("blue", "white", "red")),
+        cluster_rows = TRUE,
+        cluster_columns = FALSE,  # Adjust based on preference
+        show_row_names = TRUE,
+        show_column_names = TRUE,
+        column_title = "Gene_Location",
+        row_title = "Feature")
+```
 
+
+```{r}
+# Drawing the heatmap with adjusted legend positions
+ht = Heatmap(heatmap_matrix,
+        name = "EFFECT",
+        left_annotation   = variant_type_annotation,
+        col = colorRamp2(c(-0.1, 0, 0.1), c("blue", "white", "red")),
+        cluster_rows = TRUE,
+        cluster_columns = FALSE,
+        show_row_names = TRUE,
+        show_column_names = TRUE,
+        show_row_dend = FALSE,
+        column_title = "Gene_Location",
+        row_title = "Feature")  # Position main heatmap legend
+
+draw(ht, heatmap_legend_side = "left", annotation_legend_side = "bottom")
 ```
 

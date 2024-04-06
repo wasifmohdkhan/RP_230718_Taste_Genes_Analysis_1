@@ -89,7 +89,7 @@ plink \
 --logistic \
 --ci 0.95 \
 --covar ${metadata_dir}/Samples538_Combined_covariates.txt \
---covar-name Age,Sex,SEFI_score,Indigenous,Asian,Latin,African,Mixed,Caucasian \
+--covar-name Age,Sex,Indigenous,Asian,Latin,African,Mixed,Caucasian \
 --allow-no-sex \
 --out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
 
