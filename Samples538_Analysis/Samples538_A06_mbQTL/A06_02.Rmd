@@ -1,0 +1,216 @@
+---
+title: "538 Plink for mbQTL"
+output: html_document
+date: "2024-03-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+rm(list = ls())
+```
+
+# Load libraries
+```{r}
+library(VariantAnnotation)
+library(tidyverse)
+library(here)
+library(ComplexHeatmap)
+library(circlize)
+library(tidyr)
+```
+# create plink files
+
+```{bash, eval=FALSE}
+conda activate Plink_env
+mkdir -p /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A06_mbQTL
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A06_mbQTL
+
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+inupt_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK/
+
+plink \
+--vcf ${inupt_dir}/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf \
+--double-id \
+--make-bed \
+--keep-allele-order \
+--make-pheno ${metadata_dir}/Samples538_Combined_Phenotype.txt 1 \
+--update-sex ${metadata_dir}/Samples538_Combined_Phenotype_with_sex_info.txt \
+--recode \
+--out ./Samples538_55gene_Plink
+```
+
+
+# Plink recode vcf
+```{bash, eval=FALSE}
+plink --file ./Samples538_55gene_Plink \
+--recode A \
+--out ./Samples538_55gene_Plink.vcf
+```
+
+# plink logistic association
+
+```{bash, eval=FALSE}
+conda activate Plink_env
+
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A06_mbQTL
+metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/
+
+
+plink \
+--file ./Samples538_55gene_Plink \
+--geno 0.5 \
+--maf 0.01 \
+--not-chr x \
+--hwe 0.001 \
+--lasso 0.5 \
+--ci 0.95 \
+--recode A \
+--covar ${metadata_dir}/Samples538_Combined_covariates.txt \
+--covar-name Age,Sex,SEFI_score \
+--allow-no-sex \
+--out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
+```
+
+<!-- # plink lasso association for microbiome -->
+
+<!-- ```{bash, eval=FALSE} -->
+<!-- conda activate Plink_env -->
+
+
+<!-- cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_A06_mbQTL -->
+<!-- mkdir -p ./Microbiome_assoc_lasso_output -->
+
+<!-- metadata_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Metadata538_files/ -->
+<!-- phenotype_dir=/media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Microbiome538_files/ -->
+
+
+<!-- plink \ -->
+<!-- --file ./Samples538_55gene_Plink \ -->
+<!-- --geno 0.5 \ -->
+<!-- --maf 0.01 \ -->
+<!-- --not-chr x \ -->
+<!-- --hwe 0.001 \ -->
+<!-- --lasso 0.5 \ -->
+<!-- --ci 0.95 \ -->
+<!-- --pheno ${phenotype_dir}/Maaslin2_16S_ITS_DA_normalized_features.txt \ -->
+<!-- --all-pheno \ -->
+<!-- --covar ${metadata_dir}/Samples538_Combined_covariates.txt \ -->
+<!-- --covar-name Age,Sex,SEFI_score \ -->
+<!-- --allow-no-sex \ -->
+<!-- --out ./Microbiome_assoc_lasso_output/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001 -->
+
+<!-- ``` -->
+
+
+BH correction in the assoc.logistic file
+## Assign gene name to assoc file
+
+```{r}
+assoc_file = read.table(here("Samples538_Analysis/Samples538_A06_mbQTL/Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001.lasso"),
+                        header = T)
+assoc_file = assoc_file %>% 
+  mutate(CHR = as.character(CHR)) 
+assoc_file
+
+assoc_file_2 = assoc_file %>% 
+  mutate(SNP_A1 = paste(SNP, A1, sep = "_"))
+assoc_file_2
+```
+
+
+## load recoded vcf file to make a new vcf which as only the above variants
+```{r}
+Samples538_recoded_vcf = read.table(here("Samples538_Analysis/Samples538_A06_mbQTL/Samples538_55gene_Plink.vcf.raw"),
+                        header = T)
+Samples538_recoded_vcf
+
+Samples538_recoded_vcf_2 = Samples538_recoded_vcf %>%
+  column_to_rownames(var = "IID") %>%
+  # select only the variants in the assoc file
+  select(assoc_file_2$SNP_A1) %>% 
+  # replace missing values with 0
+  mutate(across(everything(), ~if_else(is.na(.), 0, .)))
+Samples538_recoded_vcf_2
+```
+
+## CLR normalized microbiome file with only significant species
+
+```{r}
+
+Maaslin2_16S_ITS_features = read.table(here("Samples538_Analysis/Microbiome538_files/Maaslin2_16S_ITS_DA_normalized_features.txt"),
+                                       header = T)
+Maaslin2_16S_ITS_features
+
+Maaslin2_16S_ITS_features_2 = Maaslin2_16S_ITS_features %>%
+  column_to_rownames(var = "IID") %>%
+  select(-FID)
+Maaslin2_16S_ITS_features_2
+```
+## clr to absolute count
+```{r}
+# # Convert CLR values back to 'pseudo-proportions'
+# pseudo_props <- exp(Maaslin2_16S_ITS_features_2 %>% as.matrix())
+# pseudo_props <- sweep(pseudo_props, 1, rowSums(pseudo_props), "/")
+# 
+# # Assume an estimated total count (e.g., from literature or similar samples)
+# T <- 1000000  # total microbial counts estimated
+# 
+# # Calculate estimated absolute counts
+# Maaslin2_16S_ITS_features_2_estimated_counts <- pseudo_props * T
+# Maaslin2_16S_ITS_features_2_estimated_counts_df =
+#   Maaslin2_16S_ITS_features_2_estimated_counts %>%
+#   as.data.frame()
+# Maaslin2_16S_ITS_features_2_estimated_counts_df
+```
+
+
+# Covariate file
+```{r}
+
+```
+
+```{r}
+Samples538_LinearAnalysisTaxaSNP <- linearTaxaSnp(Maaslin2_16S_ITS_features_2,
+  Samples538_recoded_vcf_2
+)
+Samples538_LinearAnalysisTaxaSNP
+```
+
+
+
+```{r}
+histPvalueLm(Samples538_LinearAnalysisTaxaSNP)
+```
+```{r}
+qqPlotLm(Maaslin2_16S_ITS_features_2, Samples538_recoded_vcf_2)
+```
+```{r}
+Samples538_correlationMicrobes <- coringTaxa(Maaslin2_16S_ITS_features_2)
+Samples538_correlationMicrobes
+```
+
+```{r}
+Samples538_for_all_rsids <- allToAllProduct(Samples538_recoded_vcf_2, Maaslin2_16S_ITS_features_2)
+Samples538_for_all_rsids
+```
+
+
+```{r}
+Samples538_taxa_SNP_Cor_lim <- taxaSnpCor(Samples538_for_all_rsids,
+  Samples538_correlationMicrobes,
+  probs = c(0.0001, 0.9999)
+)
+Samples538_taxa_SNP_Cor_lim
+```
+
+```{r}
+mbQtlCorHeatmap(Samples538_taxa_SNP_Cor_lim,
+  fontsize_col = 10,
+  fontsize_row = 10
+)
+```
+

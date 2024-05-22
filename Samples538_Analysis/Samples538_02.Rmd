@@ -298,4 +298,72 @@ awk 'BEGIN{FS=OFS="\t"} !/^#/ {if($3 == ".") $3 = $1"_"$2} {print}' Samples538_5
 > Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete.vcf
 ```
 
+```{bash, eval=FALSE}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+awk 'BEGIN{FS=OFS="\t"} !/^#/ {$3 = $1"_"$2"_"$3} {print}' Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf \
+> Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete2.vcf
+```
+
+
+```{bash, eval=FALSE}
+cd /media/Second_stor/wasif/WK_Rprojects/RP_230718_Taste_Genes_Analysis_1/Samples538_Analysis/Samples538_GATK
+awk \
+'BEGIN {FS=OFS="\t"} !/^#/ {split($8, parts, "|"); gene_info = (length(parts) >= 5 ? parts[5] : "unknown"); $3 = $1"_"$2"_"gene_info"_"$3; print;} /^#/ {print}' \
+Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf > \
+Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno_IDcomplete2.vcf
+
+```
+
+
+```{r}
+# Load the VariantAnnotation package
+library(VariantAnnotation)
+
+# Specify the path to your VCF file
+vcf_file <- here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf")
+
+# Read the VCF file
+vcf <- readVcf(vcf_file)
+
+# Extract gene names
+# This assumes gene names are stored in the INFO field under 'GENEINFO'
+info(vcf)
+```
+
+```{r}
+library(vcfR)
+my_vcf <- read.vcfR(here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf"))
+my_vcf
+
+```
+
+```{r}
+# Load the VariantAnnotation package
+library(VariantAnnotation)
+
+# Specify the path to your VCF file
+vcf_file <- here("Samples538_Analysis/Samples538_GATK/Samples538_55genes_GenotypeGVCFs_SNPIDs_filtered_anno.vcf")
+
+# Read the VCF file
+vcf <- readVcf(vcf_file)
+
+# Assuming gene info is in 'GENEINFO' field; adjust as necessary for your VCF annotations
+gene_info <- info(vcf)$GENEINFO
+
+# Extract chromosomes, positions, and original IDs
+chromosomes <- seqnames(vcf)
+positions <- start(vcf)
+original_ids <- rownames(vcf)
+
+# Create new IDs by combining the chromosome, position, gene info, and original ID
+# Adjust the format as needed
+new_ids <- paste(chromosomes, positions, gene_info, original_ids, sep="_")
+
+# Assign new IDs back to the VCF object
+rownames(vcf) <- new_ids
+
+# If you want to write this modified VCF to a file
+output_file <- "modified_vcf_file.vcf"
+writeVcf(vcf, output_file)
+```
 

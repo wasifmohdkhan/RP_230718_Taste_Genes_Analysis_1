@@ -30,6 +30,7 @@ library(Maaslin2)
 # library(ggraph)
 # library(igraph)
 # library(tidygraph)
+library(patchwork)
 ```
 
 ```{r}
@@ -465,5 +466,92 @@ write.table(Maaslin2_features_16S_ITS_2,
 ```
 
 
+## For DA Species barplot
+```{r}
+final_df_coef_16S_ITS = rbind(final_df_coef_16S, final_df_coef_ITS) %>% 
+  rename("Coefficients" = ECC_status)
+final_df_coef_16S_ITS
 
+final_df_qval_16S_ITS = rbind(final_df_qval_16S, final_df_qval_ITS) %>% 
+  rename("q_values" = ECC_status)
+final_df_qval_16S_ITS
+
+final_df_coef_qval_16S_ITS = full_join(final_df_coef_16S_ITS, final_df_qval_16S_ITS, by = "OTUs")
+final_df_coef_qval_16S_ITS
+```
+
+plot
+```{r}
+# 
+# data = final_df_coef_qval_16S_ITS
+# 
+# # Apply negative log transformation to q_values
+# data$log_q_values <- -log10(data$q_values)
+# data$Sign = ifelse(data$Coefficients > 0, "ECC", "CF")  # Assign names for legend
+# 
+# # Create a factor for ordering by Coefficients
+# data$OTUs <- factor(data$OTUs, levels = data$OTUs[order(data$Coefficients)])
+# 
+# # Plot
+# taxa_barplot <- ggplot(data, aes(y = OTUs, x = Coefficients, fill = Sign)) +
+#   geom_bar(stat = "identity", position = position_dodge()) +
+#   scale_fill_manual(values = c("ECC" = "red", "CF" = "blue")) +
+#   labs(x = "OTUs", y = "Coefficients") +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+# taxa_barplot
+# 
+# # Save the plot
+# ggsave(here("Samples538_Analysis/Microbiome538_files/Samples553_55gene_Maaslin2_taxa_barplot.png"),
+#        plot = taxa_barplot,
+#        width = 12, height = 6, dpi = 300)
+```
+
+```{r}
+# Data preparation
+data <- final_df_coef_qval_16S_ITS
+data$log_q_values <- -log10(data$q_values)
+data$Sign <- ifelse(data$Coefficients > 0, "ECC", "CF")
+
+
+# Use abbreviate to shorten names while avoiding duplicates
+data$Shortened_OTUs <- abbreviate(data$OTUs, minlength = 35, use.classes = FALSE)
+data$Shortened_OTUs <- factor(data$Shortened_OTUs, levels = data$Shortened_OTUs[order(data$Coefficients)])
+
+# Plot for Coefficients
+coef_plot <- ggplot(data, aes(y = Shortened_OTUs, x = Coefficients, fill = Sign)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_manual(values = c("ECC" = "darkred", "CF" = "darkblue")) +
+  labs(x = "MaAsLin2 Coefficients", y = "Microbial Species") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1, colour = "black", family = "Ariel"),
+        axis.text.y = element_text(colour = "black", family = "Ariel", size = 10),
+        axis.title.y = element_text(colour = "black", family = "Ariel", size = 12),
+        # legend.position = "top",       # Move legend to the top of the plot
+        legend.title = element_blank(), # Optionally remove the legend title
+        # legend.box = "horizontal" # Arrange legend items horizontally
+        )    
+
+
+# Plot for -log10 p-values
+pval_plot <- ggplot(data, aes(y = Shortened_OTUs, x = log_q_values, fill = Sign)) +
+  geom_bar(stat = "identity", position = position_dodge(), color = "black", fill = "darkgrey") +
+  labs(x = "-log10(q-value)", y = "") +  # Empty y-axis label to avoid duplication
+  theme_bw() +
+  scale_x_continuous(limits = c(0, 15), oob = scales::oob_squish) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1), axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+combined_plot <- coef_plot + pval_plot + 
+                 plot_layout(ncol = 2, widths = c(2, 1))  # Set the relative widths
+
+print(combined_plot) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1, colour = "black", family = "Ariel"),
+        axis.text.y = element_text(colour = "black", family = "Ariel", size = 10),
+        )
+
+# Save the plot
+ggsave(here("Samples538_Analysis/Microbiome538_files/Samples553_55gene_Maaslin2_taxa_barplot.png"),
+       plot = combined_plot,
+       width = 13, height = 10, dpi = 300)
+```
 

@@ -1,0 +1,92 @@
+---
+title: "mbQTL try"
+output: html_document
+date: "2024-04-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+rm(list=ls())
+```
+
+
+
+```{r}
+library(mbQTL)
+library(tidyr)
+```
+
+```{r}
+data("SnpFile")
+data("microbeAbund")
+data("CovFile")
+data("metagenomeSeqObj")
+```
+
+```{r}
+SnpFile
+```
+
+```{r}
+microbeAbund
+```
+```{r}
+CovFile
+```
+
+```{r}
+LinearAnalysisTaxaSNP <- linearTaxaSnp(microbeAbund,
+  SnpFile
+)
+LinearAnalysisTaxaSNP
+```
+
+```{r}
+histPvalueLm(LinearAnalysisTaxaSNP)
+```
+```{r}
+qqPlotLm(microbeAbund, SnpFile)
+
+```
+```{r}
+correlationMicrobes <- coringTaxa(microbeAbund)
+```
+
+```{r}
+for_all_rsids <- allToAllProduct(SnpFile, microbeAbund)
+for_all_rsids
+```
+
+```{r}
+taxa_SNP_Cor <- taxaSnpCor(for_all_rsids, correlationMicrobes)
+taxa_SNP_Cor
+```
+
+```{r}
+taxa_SNP_Cor_lim <- taxaSnpCor(for_all_rsids,
+  correlationMicrobes,
+  probs = c(0.0001, 0.9999)
+)
+taxa_SNP_Cor_lim
+```
+
+```{r}
+mbQtlCorHeatmap(taxa_SNP_Cor_lim,
+  fontsize_col = 5,
+  fontsize_row = 7
+)
+```
+```{r}
+log_link_resA <- logRegSnpsTaxa(microbeAbund, SnpFile)
+
+# Perform Logistic regression for specific microbe
+
+log_link_resB <- logRegSnpsTaxa(microbeAbund, SnpFile,
+  selectmicrobe = c("Haemophilus")
+)
+```
+

@@ -45,10 +45,10 @@ plink \
 --not-chr x \
 --hwe 0.001 \
 --recode vcf \
---lasso 0.6 \
+--lasso 0.5 \
 --ci 0.95 \
 --covar ${metadata_dir}/Samples538_Combined_covariates.txt \
---covar-name Age,Sex,SEFI_score \
+--covar-name Age,Sex,Urban_status \
 --allow-no-sex \
 --out ./Samples538_55gene_Plink_filtered_geno.5_maf.01_hwe.001
 
